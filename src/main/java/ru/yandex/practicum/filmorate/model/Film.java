@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import nonapi.io.github.classgraph.json.Id;
 import org.hibernate.validator.constraints.Length;
-import ru.yandex.practicum.filmorate.annotation.Annotation.IsAfterCinemaBirthday;
+import ru.yandex.practicum.filmorate.annotation.Annotation.FirstFilmBirthday;
 
 
 import javax.validation.constraints.*;
@@ -22,7 +22,7 @@ public class Film {
     String name;
     @Length(max = 200)
     String description;
-    @IsAfterCinemaBirthday
+    @FirstFilmBirthday
     LocalDate releaseDate;
     @Positive
     int duration;

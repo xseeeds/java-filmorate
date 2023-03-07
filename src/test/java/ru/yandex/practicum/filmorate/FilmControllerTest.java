@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static ru.yandex.practicum.filmorate.storage.Managers.getDefaultFilmManager;
 
@@ -51,7 +52,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testFilm))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated());
 
         String contentAsString = mockMvc
                 .perform(get("/films"))
@@ -68,7 +69,7 @@ public class FilmControllerTest {
 
         mockMvc.perform(delete("/films"))
                 .andExpect(status()
-                        .is(205));
+                        .isResetContent());
 
         contentAsString = mockMvc
                 .perform(get("/films"))
@@ -98,7 +99,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(filmWithId))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
 
 
@@ -117,7 +118,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(emptyNameFilm))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
 
 
@@ -139,7 +140,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(longDescriptionFilm))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
 
 
@@ -157,7 +158,7 @@ public class FilmControllerTest {
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(failReleaseDateFilm))
-                .andExpect(status().is(400));
+                .andExpect(status().isBadRequest());
 
 
         String testBoundaryReleaseDateFilm = "{\n" +
@@ -171,7 +172,9 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testBoundaryReleaseDateFilm))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testBoundaryReleaseDateFilm));
     }
 
     @Test
@@ -189,7 +192,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(zeroDurationFilm))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
 
 
         String negativeDurationFilm = "{\n" +
@@ -203,7 +206,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(negativeDurationFilm))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
 
 
@@ -222,7 +225,9 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testFilm))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testFilm));
 
 
         String twinFilm = "{\n" +
@@ -236,7 +241,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(twinFilm))
                 .andExpect(status()
-                        .is(409));
+                        .isConflict());
     }
 
 
@@ -244,7 +249,7 @@ public class FilmControllerTest {
     @SneakyThrows
     public void putFilmTest() {
 
-        String createFilm = "{\n" +
+        String testFilm = "{\n" +
                 "  \"name\": \"nisi eiusmod\",\n" +
                 "  \"description\": \"adipisicing\",\n" +
                 "  \"releaseDate\": \"1967-03-25\",\n" +
@@ -253,9 +258,11 @@ public class FilmControllerTest {
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createFilm))
+                        .content(testFilm))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testFilm));
 
 
         String filmToUpdate = "{\n" +
@@ -271,7 +278,9 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(filmToUpdate))
                 .andExpect(status()
-                        .is(200));
+                        .isOk())
+                .andExpect(content()
+                        .json(filmToUpdate));
     }
 
 
@@ -291,8 +300,9 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(emptyFilm))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
+
 
     @Test
     @SneakyThrows
@@ -311,7 +321,7 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(notFoundIdFilm))
                 .andExpect(status()
-                        .is(404));
+                        .isNotFound());
     }
 
     @Test
@@ -329,7 +339,9 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testFilm1))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testFilm1));
 
         String testFilm2 = "{\n" +
                 "  \"name\": \"Film Updated\",\n" +
@@ -343,7 +355,9 @@ public class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testFilm2))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testFilm2));
 
 
         String filmDuplicate =
@@ -357,6 +371,7 @@ public class FilmControllerTest {
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(filmDuplicate))
-                .andExpect(status().is(409));
+                .andExpect(status()
+                        .isConflict());
     }
 }

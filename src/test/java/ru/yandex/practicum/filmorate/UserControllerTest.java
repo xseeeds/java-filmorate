@@ -20,8 +20,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static ru.yandex.practicum.filmorate.storage.Managers.getDefaultUserManager;
 
 @SpringBootTest
@@ -55,11 +55,12 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testUser))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated());
 
-        String response = mockMvc.perform(get("/users"))
+        String response = mockMvc
+                .perform(get("/users"))
                 .andExpect(status()
-                        .is(200))
+                        .isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -73,10 +74,12 @@ public class UserControllerTest {
 
         mockMvc.perform(delete("/users"))
                 .andExpect(status()
-                        .is(205));
+                        .isResetContent());
 
         response = mockMvc
                 .perform(get("/users"))
+                .andExpect(status()
+                        .isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -98,21 +101,9 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testUser))
                 .andExpect(status()
-                        .is(201));
-
-
-        String response = mockMvc.perform(get("/users"))
-                .andExpect(status()
-                        .is(200))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        List<User> users = objectMapper
-                .readValue(response, new TypeReference<>() {
-                });
-
-        assertEquals("dolore", users.get(0).getName());
+                        .isCreated())
+                .andExpect(jsonPath("$.name")
+                        .value("dolore"));
     }
 
     @Test
@@ -129,7 +120,7 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(failLoginUser))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
 
     @Test
@@ -147,9 +138,9 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(failEmailUser))
                 .andExpect(status()
-                        .is(400));
-
+                        .isBadRequest());
     }
+
 
     @Test
     @SneakyThrows
@@ -166,8 +157,7 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(failBirthdayUser))
                 .andExpect(status()
-                        .is(400));
-
+                        .isBadRequest());
     }
 
     @Test
@@ -187,7 +177,7 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userWithId))
                 .andExpect(status()
-                        .is(400));
+                        .isBadRequest());
     }
 
 
@@ -206,10 +196,12 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testUser))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser));
 
 
-        String loginAlreadyUsedUser = "{\n" +
+        String existentLoginByUser = "{\n" +
                 "  \"login\": \"dolore123\",\n" +
                 "  \"name\": \"Nick Name\",\n" +
                 "  \"email\": \"mail@mail.ru\",\n" +
@@ -218,12 +210,12 @@ public class UserControllerTest {
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginAlreadyUsedUser))
+                        .content(existentLoginByUser))
                 .andExpect(status()
-                        .is(409));
+                        .isConflict());
 
 
-        String emailAlreadyUsedUser = "{\n" +
+        String existentEmailByUser = "{\n" +
                 "  \"login\": \"dolore\",\n" +
                 "  \"name\": \"Nick Name\",\n" +
                 "  \"email\": \"mail123@mail.ru\",\n" +
@@ -232,9 +224,9 @@ public class UserControllerTest {
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(emailAlreadyUsedUser))
+                        .content(existentEmailByUser))
                 .andExpect(status()
-                        .is(409));
+                        .isConflict());
     }
 
 
@@ -253,7 +245,9 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testUser))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser));
 
 
         String userToUpdate = "{\n" +
@@ -268,7 +262,9 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userToUpdate))
                 .andExpect(status()
-                        .is(200));
+                        .isOk())
+                .andExpect(content()
+                        .json(userToUpdate));
     }
 
 
@@ -287,7 +283,9 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(testUser))
                 .andExpect(status()
-                        .is(201));
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser));
 
         String userToUpdate = "{\n" +
                 "  \"login\": \"doloreUpdate\",\n" +
@@ -300,20 +298,9 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userToUpdate))
                 .andExpect(status()
-                        .is(200));
-
-        String response = mockMvc.perform(get("/users"))
-                .andExpect(status()
-                        .is(200))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        List<User> users = objectMapper
-                .readValue(response, new TypeReference<>() {
-                });
-
-        assertEquals("doloreUpdate", users.get(0).getName());
+                        .isOk())
+                .andExpect(jsonPath("$.name")
+                        .value("doloreUpdate"));
     }
 
 
@@ -324,7 +311,7 @@ public class UserControllerTest {
         String notFoundIdUser = "{\n" +
                 "  \"login\": \"doloreUpdate\",\n" +
                 "  \"name\": \"est adipisicing\",\n" +
-                "  \"id\": 1,\n" +
+                "  \"id\": 9999,\n" +
                 "  \"email\": \"mail@yandex.ru\",\n" +
                 "  \"birthday\": \"1976-09-20\"\n" +
                 "}";
@@ -333,13 +320,13 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(notFoundIdUser))
                 .andExpect(status()
-                        .is(404));
+                        .isNotFound());
     }
 
 
     @Test
     @SneakyThrows
-    public void putFailUserIdIdIsEmpty() {
+    public void putFailUserIdIsEmpty() {
 
         String IdIsEmptyUser = "{\n" +
                 "  \"login\": \"doloreUpdate\",\n" +
@@ -352,21 +339,6 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(IdIsEmptyUser))
                 .andExpect(status()
-                        .is(400));
-
-        String failIdUser = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"id\": 9999,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
-
-        mockMvc.perform(put("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(failIdUser))
-                .andExpect(status()
-                        .is(404));
-
+                        .isBadRequest());
     }
 }
