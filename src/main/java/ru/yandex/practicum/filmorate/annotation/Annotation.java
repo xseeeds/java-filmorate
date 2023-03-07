@@ -10,7 +10,7 @@ import java.lang.annotation.*;
 
 public class Annotation {
     @Documented
-    @Constraint(validatedBy = IsAfterCinemaBirthdayValidator.class)
+    @Constraint(validatedBy = FirstFilmBirthdayValidator.class)
     @Target({ElementType.METHOD, ElementType.FIELD})
     @Retention(RetentionPolicy.RUNTIME)
     public @interface FirstFilmBirthday {
@@ -21,7 +21,7 @@ public class Annotation {
         Class<? extends Payload>[] payload() default {};
     }
 
-    static class IsAfterCinemaBirthdayValidator implements ConstraintValidator<FirstFilmBirthday, LocalDate> {
+    static class FirstFilmBirthdayValidator implements ConstraintValidator<FirstFilmBirthday, LocalDate> {
         private final LocalDate firstFilmBirthday = LocalDate.of(1895, 12, 27);
 
         @Override
