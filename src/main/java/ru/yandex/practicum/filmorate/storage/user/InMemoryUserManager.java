@@ -104,15 +104,15 @@ public class InMemoryUserManager implements UserStorage {
         return users.values();
     }
 
+
     @Override
     public ResponseEntity<String> removeAllUser() {
         users.clear();
         userLogins.clear();
         userEmails.clear();
 
-        log.info("Все пользователи удалены. Текущее количество пользователей: {}", users.size());
+        log.info("Все пользователи удалены.");
 
-        return ResponseEntity.status(HttpStatus.RESET_CONTENT).body("Все пользователи удалены. " +
-                "Текущее количество пользователей: " + users.size());
+        return ResponseEntity.status(HttpStatus.RESET_CONTENT).body("Все пользователи удалены.");
     }
 }

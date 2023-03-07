@@ -11,7 +11,6 @@ import java.util.*;
 @Slf4j
 public class InMemoryFilmManager implements FilmStorage {
     private final Map<Integer, Film> films = new HashMap<>();
-    private final HashSet<Film> setFilms = new HashSet<>();
 
     @Override
     public ResponseEntity<Film> addFilm(Film film) {
@@ -22,7 +21,10 @@ public class InMemoryFilmManager implements FilmStorage {
                     "POST request. Для обновления используй PUT запрос");
         }
 
-        if (setFilms.contains(film)) {
+        if (films
+                .values()
+                .stream()
+                .anyMatch(existentFilm -> existentFilm.equals(film))) {
 
             log.error("Такой фильм: {} уже существует, для обновления используй PUT запрос", film);
 
@@ -35,8 +37,6 @@ public class InMemoryFilmManager implements FilmStorage {
         Film newFilm = film.toBuilder().id(films.size() + 1)
                 .build();
         films.put(newFilm.getId(), newFilm);
-
-        setFilms.add(newFilm);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newFilm);
     }
@@ -51,37 +51,36 @@ public class InMemoryFilmManager implements FilmStorage {
                     "PUT request. Для обновления используй id в теле запроса");
         }
 
-        if (setFilms.contains(newFilm)) {
+        if (!films.containsKey(newFilm.getId())) {
 
-            int existentId = setFilms
-                    .stream()
-                    .filter(film -> film.equals(newFilm))
-                    .findFirst()
-                    .get()
-                    .getId();
+            log.error("Такой фильм: {} не существует", newFilm);
 
-            log.error("Такой фильм: {} уже существует по id {}", newFilm, existentId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой фильм:"
+                            + newFilm
+                            + " не существует");
+        }
+
+        final Film existentFilm = films
+                .values()
+                .stream()
+                .filter(searchFilm -> searchFilm.equals(newFilm))
+                .findFirst()
+                .orElse(null);
+
+        if (existentFilm != null) {
+
+            log.error("Такой фильм: {} уже существует по id {}", newFilm, existentFilm.getId());
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Такой фильм: "
                             + newFilm
-                            + " уже существует, по id: " + existentId);
+                            + " уже существует, по id: " + existentFilm.getId());
         }
 
-        if (films.containsKey(newFilm.getId())) {
+        films.put(newFilm.getId(), newFilm);
 
-            films.put(newFilm.getId(), newFilm);
-
-            setFilms.add(newFilm);
-
-            return ResponseEntity.status(HttpStatus.OK).body(newFilm);
-        }
-        log.error("Такой фильм: {} не существует", newFilm);
-
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Такой фильм:"
-                        + newFilm
-                        + " не существует");
+        return ResponseEntity.status(HttpStatus.OK).body(newFilm);
     }
 
     @Override
@@ -95,11 +94,9 @@ public class InMemoryFilmManager implements FilmStorage {
     @Override
     public ResponseEntity<String> removeAllFilm() {
         films.clear();
-        setFilms.clear();
 
-        log.info("Все фильмы удалены. Текущее количество фильмов: {}", films.size());
+        log.info("Все фильмы удалены.");
 
-        return ResponseEntity.status(HttpStatus.RESET_CONTENT).body("Все фильмы удалены. " +
-                "Текущее количество фильмов: " + films.size());
+        return ResponseEntity.status(HttpStatus.RESET_CONTENT).body("Все фильмы удалены.");
     }
 }
