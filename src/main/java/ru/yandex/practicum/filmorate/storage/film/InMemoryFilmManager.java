@@ -17,6 +17,8 @@ public class InMemoryFilmManager implements FilmStorage {
 
         if (film.getId() != 0) {
 
+            log.error("POST request. Для обновления используй PUT запрос, film имеет id => {}", film);
+
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "POST request. Для обновления используй PUT запрос");
         }
@@ -34,11 +36,15 @@ public class InMemoryFilmManager implements FilmStorage {
                             + " уже существует, для обновления используй PUT запрос");
         }
 
+        log.info("film {}", film);
+
         Film newFilm = film.toBuilder().id(films.size() + 1)
                 .build();
         films.put(newFilm.getId(), newFilm);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(newFilm);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(newFilm);
     }
 
 
@@ -46,6 +52,8 @@ public class InMemoryFilmManager implements FilmStorage {
     public ResponseEntity<Film> updateFilm(Film newFilm) {
 
         if (newFilm.getId() == 0) {
+
+            log.error("PUT request. Для обновления используй id в теле запроса newFilm => {}", newFilm);
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "PUT request. Для обновления используй id в теле запроса");
@@ -78,9 +86,13 @@ public class InMemoryFilmManager implements FilmStorage {
                             + " уже существует, по id: " + existentFilm.getId());
         }
 
+        log.info("newFilm {}", newFilm);
+
         films.put(newFilm.getId(), newFilm);
 
-        return ResponseEntity.status(HttpStatus.OK).body(newFilm);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(newFilm);
     }
 
     @Override
@@ -93,10 +105,13 @@ public class InMemoryFilmManager implements FilmStorage {
 
     @Override
     public ResponseEntity<String> removeAllFilm() {
+
         films.clear();
 
         log.info("Все фильмы удалены.");
 
-        return ResponseEntity.status(HttpStatus.RESET_CONTENT).body("Все фильмы удалены.");
+        return ResponseEntity
+                .status(HttpStatus.RESET_CONTENT)
+                .body("Все фильмы удалены.");
     }
 }

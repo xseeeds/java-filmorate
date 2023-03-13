@@ -23,6 +23,8 @@ public class InMemoryUserManager implements UserStorage {
 
         if (user.getId() != 0) {
 
+            log.error("POST request. Для обновления используй PUT запрос, user имеет id => {}", user);
+
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "POST request. Для обновления используй PUT запрос");
         }
@@ -59,13 +61,17 @@ public class InMemoryUserManager implements UserStorage {
 
         log.info("user {}", user);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(user);
     }
 
     @Override
     public ResponseEntity<User> updateUser(User newUser) {
 
         if (newUser.getId() == 0) {
+
+            log.error("PUT request. Для обновления используй id в теле запроса newUser => {}", newUser);
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "PUT request. Для обновления используй id в теле запроса");
@@ -76,6 +82,7 @@ public class InMemoryUserManager implements UserStorage {
             if (newUser.getName() == null) {
                 newUser.setName(newUser.getLogin());
             }
+
             final User oldUser = users.get(newUser.getId());
 
             userEmails.remove(oldUser.getEmail());
@@ -85,9 +92,11 @@ public class InMemoryUserManager implements UserStorage {
             userEmails.add(newUser.getEmail());
             userLogins.add(newUser.getLogin());
 
-            log.info("user {}", newUser);
+            log.info("newUser {}", newUser);
 
-            return ResponseEntity.status(HttpStatus.OK).body(newUser);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(newUser);
 
         }
         log.error("Такой пользователь: {} не существует", newUser);
@@ -107,12 +116,15 @@ public class InMemoryUserManager implements UserStorage {
 
     @Override
     public ResponseEntity<String> removeAllUser() {
+
         users.clear();
         userLogins.clear();
         userEmails.clear();
 
         log.info("Все пользователи удалены.");
 
-        return ResponseEntity.status(HttpStatus.RESET_CONTENT).body("Все пользователи удалены.");
+        return ResponseEntity
+                .status(HttpStatus.RESET_CONTENT)
+                .body("Все пользователи удалены.");
     }
 }
