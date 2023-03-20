@@ -108,16 +108,18 @@ public class FilmService {
     public ResponseEntity<String> removeAllFilm() {
 
         filmStorage.removeAllFilm();
+
         log.info("Все фильмы удалены.");
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body("Все фильмы удалены.");
+                .body("\"Все фильмы удалены.\"");
     }
 
     public ResponseEntity<Map<String, Film>> addUserLikeByFilmId(int filmId, int userId) throws ResponseStatusException {
 
         final Film film = filmStorage.getFilmById(filmId);
+
         userStorage.checkUserById(userId);
 
         if (film.getLikes().contains(userId)) {
@@ -130,6 +132,8 @@ public class FilmService {
 
         film.getLikes().add(userId);
 
+        filmStorage.updateFilm(film);
+
         log.info("Пользователем c id=>{} добавлен лайк фильму c id=>{}", userId, filmId);
 
         return ResponseEntity
@@ -140,6 +144,7 @@ public class FilmService {
     public ResponseEntity<Map<String, Film>> removeUserLikeByFilmId(int filmId, int userId) {
 
         final Film film = filmStorage.getFilmById(filmId);
+
         userStorage.checkUserById(userId);
 
         if (!film.getLikes().contains(userId)) {
@@ -151,6 +156,8 @@ public class FilmService {
         }
 
         film.getLikes().remove(userId);
+
+        filmStorage.updateFilm(film);
 
         log.info("Пользователем c id=>{} удален лайк у фильма c id=>{}", userId, filmId);
 
@@ -164,7 +171,7 @@ public class FilmService {
         final Collection<Film> filmByPopular = filmStorage
                 .getAllFilm()
                 .stream()
-                .sorted(this::compare)
+                .sorted(this::filmCompareByLikes)
                 .limit(count)
                 .collect(toCollection(ArrayList::new));
 
@@ -175,11 +182,10 @@ public class FilmService {
                 .body(Map.of("Запрос фильмов по полярности=>", filmByPopular));
     }
 
-    private int compare(Film f0, Film f1) {
-        Integer l0 = f0.getLikes().size();
-        Integer l1 = f1.getLikes().size();
-        return l0.compareTo(l1);
+    private int filmCompareByLikes(Film f0, Film f1) {
+        return Integer.compare(f0.getLikes().size(), f1.getLikes().size());
     }
+
 
     /*private int setRatingFilm(Film film) {
         return film.getLikes().values().stream().mapToInt(Integer::intValue).sum() / likes.size();

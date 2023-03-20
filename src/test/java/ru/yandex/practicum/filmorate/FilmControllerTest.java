@@ -42,7 +42,7 @@ public class FilmControllerTest {
 
     @Test
     @SneakyThrows
-    public void postAndGetAndDeleteFilmsTest() {
+    public void postAndGetAndDeleteAllFilmsTest() {
 
         String testFilm = "{\n" +
                 "  \"name\": \"nisi eiusmod\",\n" +

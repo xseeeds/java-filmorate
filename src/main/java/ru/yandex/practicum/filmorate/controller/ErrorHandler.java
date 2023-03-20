@@ -17,10 +17,10 @@ public class ErrorHandler {
                 "400 (Bad request)", String.format("Ошибка с полем \"%s\".", e.getParameter()));
     }
 
-    @ExceptionHandler()
+    /*@ExceptionHandler()
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(final Throwable e) {
         return new ErrorResponse(
                 "500 (Internal server error)", "Произошла непредвиденная ошибка.");
-    }
+    }*/
 }

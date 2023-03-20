@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 
 @Component
@@ -61,6 +60,7 @@ public class InMemoryUserManager implements UserStorage {
 
             userLogins.remove(user.getLogin());
             userEmails.remove(user.getEmail());
+
             users.values().forEach(u -> u.getFriendsIds().remove(userId));
 
             return user;
@@ -103,7 +103,7 @@ public class InMemoryUserManager implements UserStorage {
     @Override
     public void checkUserById(int userId) {
 
-        if (users.containsKey(userId)) {
+        if (!users.containsKey(userId)) {
 
             log.error("Такой пользователь c id=>{} не существует", userId);
 

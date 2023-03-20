@@ -116,7 +116,7 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("All users=>", allUser));
+                .body(Map.of("Все пользователи=>", allUser));
     }
 
     public ResponseEntity<Map<String, User>> getUserById(int userId) throws ResponseStatusException {
@@ -174,7 +174,7 @@ public class UserService {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("Friend с id=>" + friendId
-                        + " добавлен пользователю с id=>" + userId
+                                + " добавлен пользователю с id=>" + userId
                         , Map.of(user, friend)));
     }
 
@@ -211,7 +211,15 @@ public class UserService {
         final Collection<User> allFriends = user
                 .getFriendsIds()
                 .stream()
-                .map(id -> userStorage.getUserById(id))
+                .map(id -> {
+                    User friend;
+                    try {
+                        friend = userStorage.getUserById(id);
+                    } catch (ResponseStatusException e) {
+                        return null;
+                    }
+                    return friend;
+                })
                 .collect(toCollection(ArrayList::new));
 
         log.info("Текущее количество друзей пользователя с id=>{}; =>{}", userId, allFriends.size());
@@ -232,7 +240,15 @@ public class UserService {
                 .getFriendsIds()
                 .stream()
                 .filter(friend.getFriendsIds()::contains)
-                .map(id -> userStorage.getUserById(id))
+                .map(id -> {
+                    User commonFriend;
+                    try {
+                        commonFriend = userStorage.getUserById(id);
+                    } catch (ResponseStatusException e) {
+                        return null;
+                    }
+                    return commonFriend;
+                })
                 .collect(toCollection(ArrayList::new));
 
         log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} => {}"

@@ -70,13 +70,16 @@ public class InMemoryFilmManager implements FilmStorage {
 
     @Override
     public void updateFilm(Film film) {
-        Film ceil = films.ceiling(film);
-        Film floor = films.floor(film);
 
-        Film oldFilm = ceil == floor ? ceil : null;
+        Optional<Film> oldFilm = films
+                .stream()
+                .filter(f -> f.getId() == film.getId())
+                .findFirst();
 
-        films.remove(oldFilm);
-        films.add(film);
+        if (oldFilm.isPresent()) {
+            films.remove(oldFilm.get());
+            films.add(film);
+        }
     }
 
     @Override
@@ -114,7 +117,7 @@ public class InMemoryFilmManager implements FilmStorage {
     @Override
     public void checkFilm(Film film) {
 
-        if (!films.contains(film)) {
+        if (films.contains(film)) {
 
             log.error("Такой фильм: {} уже существует, для обновления используй PUT запрос", film);
 
@@ -128,7 +131,7 @@ public class InMemoryFilmManager implements FilmStorage {
     @Override
     public void checkFilmById(int filmId) {
 
-        if (idsFilms.contains(filmId)) {
+        if (!idsFilms.contains(filmId)) {
 
             log.error("Такой фильм с id: {} не существует", filmId);
 
