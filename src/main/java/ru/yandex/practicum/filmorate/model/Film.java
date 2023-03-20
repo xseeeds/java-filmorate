@@ -1,8 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Builder;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
 import nonapi.io.github.classgraph.json.Id;
 import org.hibernate.validator.constraints.Length;
 import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthday;
@@ -10,30 +9,34 @@ import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthday;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.Set;
 
-@Value
-@Builder(toBuilder = true)
+@Data
 public class Film {
 
     @Id
     @EqualsAndHashCode.Exclude
-    int id;
+    private int id;
 
     @NotNull
     @NotBlank
-    String name;
+    private String name;
 
     @Length(max = 200)
-    String description;
+    @EqualsAndHashCode.Exclude
+    private String description;
 
     @FirstFilmBirthday
-    LocalDate releaseDate;
+    private LocalDate releaseDate;
 
     @Positive
-    int duration;
+    private int duration;
 
     @Max(10)
     @PositiveOrZero
     @EqualsAndHashCode.Exclude
-    byte rate;
+    private float rate;
+
+    //TODO сделай TreeMap<Integer, Integer> likes; userId/rate
+    Set<Integer> likes;
 }

@@ -2,129 +2,156 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
+
+@Component
 @Slf4j
 public class InMemoryUserManager implements UserStorage {
+    private final TreeMap<Integer, User> users = new TreeMap<>();
+    private final TreeMap<String, Integer> userEmails = new TreeMap<>();
+    private final TreeMap<String, Integer> userLogins = new TreeMap<>();
 
-    private final Map<Integer, User> users = new HashMap<>();
-    private final HashSet<String> userEmails = new HashSet<>();
-    private final HashSet<String> userLogins = new HashSet<>();
 
     @Override
-    public ResponseEntity<User> addUser(User user) {
-
-        if (user.getId() != 0) {
-
-            log.error("POST request. Для обновления используй PUT запрос, user имеет id => {}", user);
-
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "POST request. Для обновления используй PUT запрос");
-        }
-
-        if (userLogins.contains(user.getLogin())) {
-
-            log.error("Такой пользователь с login: {} уже существует, для обновления используй PUT запрос", user.getLogin());
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой пользователь с login:"
-                            + user.getLogin()
-                            + " уже существует, для обновления используй PUT запрос");
-        }
-
-        if (userEmails.contains(user.getEmail())) {
-
-            log.error("Такой пользователь с email: {} уже существует, для обновления используй PUT запрос", user.getEmail());
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой пользователь с email:"
-                            + user.getEmail()
-                            + " уже существует, для обновления используй PUT запрос");
-        }
-
-        if (user.getName() == null) {
-            user.setName(user.getLogin());
-        }
-
-        user.setId(users.size() + 1);
-
+    public void userAddOrUpdate(User user) {
         users.put(user.getId(), user);
-        userEmails.add(user.getEmail());
-        userLogins.add(user.getLogin());
-
-        log.info("user {}", user);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(user);
+        userEmails.put(user.getEmail(), user.getId());
+        userLogins.put(user.getLogin(), user.getId());
     }
 
     @Override
-    public ResponseEntity<User> updateUser(User newUser) {
+    public User getUserById(int userId) {
 
-        if (newUser.getId() == 0) {
+        final User user = users.get(userId);
 
-            log.error("PUT request. Для обновления используй id в теле запроса newUser => {}", newUser);
+        if (user == null) {
+            log.error("Такой пользователь с id: {} не существует", userId);
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PUT request. Для обновления используй id в теле запроса");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой пользователь c id=>" + userId + " не существует");
         }
-
-        if (users.containsKey(newUser.getId())) {
-
-            if (newUser.getName() == null) {
-                newUser.setName(newUser.getLogin());
-            }
-
-            final User oldUser = users.get(newUser.getId());
-
-            userEmails.remove(oldUser.getEmail());
-            userLogins.remove(oldUser.getLogin());
-
-            users.put(newUser.getId(), newUser);
-            userEmails.add(newUser.getEmail());
-            userLogins.add(newUser.getLogin());
-
-            log.info("newUser {}", newUser);
-
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(newUser);
-
-        }
-        log.error("Такой пользователь: {} не существует", newUser);
-
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Такой пользователь: " + newUser + " не существует");
+        return user;
     }
 
     @Override
     public Collection<User> getAllUser() {
-
-        log.info("Текущее количество пользователей : {}", users.size());
-
         return users.values();
     }
 
-
     @Override
-    public ResponseEntity<String> removeAllUser() {
-
+    public void removeAllUser() {
         users.clear();
         userLogins.clear();
         userEmails.clear();
+    }
 
-        log.info("Все пользователи удалены.");
+    @Override
+    public User removeUserById(int userId) {
 
-        return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body("Все пользователи удалены.");
+        if (users.containsKey(userId)) {
+
+            final User user = users.remove(userId);
+
+            userLogins.remove(user.getLogin());
+            userEmails.remove(user.getEmail());
+            users.values().forEach(u -> u.getFriendsIds().remove(userId));
+
+            return user;
+        }
+        log.error("Такой пользователь с id: {} не существует", userId);
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Такой user c id=>" + userId + " не существует");
+    }
+
+    @Override
+    public void checkUserLogin(String userLogin) {
+
+        if (userLogins.containsKey(userLogin)) {
+
+            log.error("Такой пользователь с login: {} уже существует, для обновления используй PUT запрос", userLogin);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с login:"
+                            + userLogin
+                            + " уже существует, для обновления используй PUT запрос");
+        }
+    }
+
+    @Override
+    public void checkUserEmail(String userEmail) {
+
+        if (userEmails.containsKey(userEmail)) {
+
+            log.error("Такой пользователь с email: {} уже существует, для обновления используй PUT запрос", userEmail);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с email:"
+                            + userEmail
+                            + " уже существует, для обновления используй PUT запрос");
+
+        }
+    }
+
+    @Override
+    public void checkUserById(int userId) {
+
+        if (users.containsKey(userId)) {
+
+            log.error("Такой пользователь c id=>{} не существует", userId);
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой пользователь c id=>" + userId + " не существует");
+        }
+    }
+
+    @Override
+    public void checkUserIdOnLogin(String newUserLogin, int newUserId) {
+
+        final int existentId = userLogins.getOrDefault(newUserLogin, 0);
+
+        if (existentId != newUserId & existentId != 0) {
+
+            log.error("Такой пользователь с login: {} уже существует, по id=>{}", newUserLogin, existentId);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с login: "
+                            + newUserLogin
+                            + " уже существует, по id=>" + existentId);
+        }
+
+    }
+
+    @Override
+    public void checkUserIdOnEmail(String newUserEmail, int newUserId) {
+
+        int existentId = userEmails.getOrDefault(newUserEmail, 0);
+
+        if (existentId != newUserId & existentId != 0) {
+
+            log.error("Такой пользователь с email: {} уже существует, по id=>{}", newUserEmail, existentId);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с email:"
+                            + newUserEmail
+                            + " уже существует, по id=>" + existentId);
+        }
+    }
+
+    @Override
+    public void removeOldIdByLogin(String userLogin) {
+        userLogins.remove(userLogin);
+    }
+
+    @Override
+    public void removeOldIdByEmail(String userEmail) {
+        userEmails.remove(userEmail);
     }
 }

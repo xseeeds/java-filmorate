@@ -2,31 +2,119 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.util.*;
+import java.util.Optional;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.TreeSet;
 
+
+@Component
 @Slf4j
 public class InMemoryFilmManager implements FilmStorage {
-    private final Map<Integer, Film> films = new HashMap<>();
+    private final TreeSet<Film> films = new TreeSet<>(Comparator
+            .comparing(Film::getName)
+            .thenComparing(Film::getReleaseDate)
+            .thenComparing(Film::getDuration));
+
+    private Integer globalId = 0;
+    private final TreeSet<Integer> idsFilms = new TreeSet<>();
 
     @Override
-    public ResponseEntity<Film> addFilm(Film film) {
+    public void addFilm(Film film) {
+        film.setId(getNextId());
+        films.add(film);
+        idsFilms.add(film.getId());
+    }
 
-        if (film.getId() != 0) {
+    @Override
+    public void checkFilmByNameReleaseDateDuration(Film film) {
 
-            log.error("POST request. Для обновления используй PUT запрос, film имеет id => {}", film);
+        Film ceil = films.ceiling(film);
+        Film floor = films.floor(film);
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "POST request. Для обновления используй PUT запрос");
+        Film existentFilm = ceil == floor ? ceil : null;
+
+        if (existentFilm != null) {
+
+            log.error("Такой фильм: {} уже существует по id {}", film, existentFilm.getId());
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой фильм: "
+                            + film
+                            + " уже существует, по id: " + existentFilm.getId());
         }
+    }
 
-        if (films
-                .values()
+    @Override
+    public Film getFilmById(int filmId) {
+        Optional<Film> film = films
                 .stream()
-                .anyMatch(existentFilm -> existentFilm.equals(film))) {
+                .filter(f -> f.getId() == filmId)
+                .findFirst();
+
+        if (film.isEmpty()) {
+
+            log.error("Такой фильм с id: {} не существует", filmId);
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой фильм с id: "
+                            + filmId
+                            + " не существует");
+        }
+        return film.get();
+    }
+
+    @Override
+    public void updateFilm(Film film) {
+        Film ceil = films.ceiling(film);
+        Film floor = films.floor(film);
+
+        Film oldFilm = ceil == floor ? ceil : null;
+
+        films.remove(oldFilm);
+        films.add(film);
+    }
+
+    @Override
+    public Collection<Film> getAllFilm() {
+        return films;
+    }
+
+    @Override
+    public Film removeFilmById(int filmId) {
+        Optional<Film> film = films
+                .stream()
+                .filter(f -> f.getId() == filmId)
+                .findFirst();
+        if (film.isEmpty()) {
+
+            log.error("Такой фильм с id: {} не существует", filmId);
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой фильм с id: "
+                            + filmId
+                            + " не существует");
+        }
+        films.remove(film.get());
+        idsFilms.remove(filmId);
+        return film.get();
+    }
+
+    @Override
+    public void removeAllFilm() {
+        films.clear();
+        idsFilms.clear();
+        resetGlobalId();
+    }
+
+    @Override
+    public void checkFilm(Film film) {
+
+        if (!films.contains(film)) {
 
             log.error("Такой фильм: {} уже существует, для обновления используй PUT запрос", film);
 
@@ -35,83 +123,28 @@ public class InMemoryFilmManager implements FilmStorage {
                             + film
                             + " уже существует, для обновления используй PUT запрос");
         }
-
-        log.info("film {}", film);
-
-        Film newFilm = film.toBuilder().id(films.size() + 1)
-                .build();
-        films.put(newFilm.getId(), newFilm);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(newFilm);
     }
 
-
     @Override
-    public ResponseEntity<Film> updateFilm(Film newFilm) {
+    public void checkFilmById(int filmId) {
 
-        if (newFilm.getId() == 0) {
+        if (idsFilms.contains(filmId)) {
 
-            log.error("PUT request. Для обновления используй id в теле запроса newFilm => {}", newFilm);
-
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PUT request. Для обновления используй id в теле запроса");
-        }
-
-        if (!films.containsKey(newFilm.getId())) {
-
-            log.error("Такой фильм: {} не существует", newFilm);
+            log.error("Такой фильм с id: {} не существует", filmId);
 
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой фильм:"
-                            + newFilm
+                    "Такой фильм с id: "
+                            + filmId
                             + " не существует");
         }
-
-        final Film existentFilm = films
-                .values()
-                .stream()
-                .filter(searchFilm -> searchFilm.equals(newFilm))
-                .findFirst()
-                .orElse(null);
-
-        if (existentFilm != null) {
-
-            log.error("Такой фильм: {} уже существует по id {}", newFilm, existentFilm.getId());
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой фильм: "
-                            + newFilm
-                            + " уже существует, по id: " + existentFilm.getId());
-        }
-
-        log.info("newFilm {}", newFilm);
-
-        films.put(newFilm.getId(), newFilm);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(newFilm);
+        //films.stream().noneMatch(film -> film.getId() == filmId);
     }
 
-    @Override
-    public Collection<Film> getAllFilm() {
-
-        log.info("Текущее количество фильмов : {}", films.size());
-
-        return films.values();
+    private Integer getNextId() {
+        return ++globalId;
     }
 
-    @Override
-    public ResponseEntity<String> removeAllFilm() {
-
-        films.clear();
-
-        log.info("Все фильмы удалены.");
-
-        return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body("Все фильмы удалены.");
+    private void resetGlobalId() {
+        globalId = 0;
     }
 }

@@ -1,26 +1,39 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Value;
 import nonapi.io.github.classgraph.json.Id;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.Set;
 
-@Data
+@Value
+@Builder(toBuilder = true)
 public class User {
 
     @Id
-    private int id;
+    int id;
 
     @Email
-    private String email;
+    String email;
 
     @NotNull
     @NotBlank
-    private String login;
+    String login;
 
-    private String name;
+    String name;
 
     @Past
-    private LocalDate birthday;
+    LocalDate birthday;
+
+    Set<Integer> friendsIds;
+
+//    public void addFriendId(int friendId) {
+//        friendsIds.add(friendId);
+//    }
+//
+//    public void removeFriendId(int friendId) {
+//        friendsIds.remove(friendId);
+//    }
 }

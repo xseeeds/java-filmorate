@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmManager;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
 
@@ -19,21 +19,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static ru.yandex.practicum.filmorate.storage.Managers.getDefaultFilmManager;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class FilmControllerTest {
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
+    private final FilmService filmService;
 
     @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private ObjectMapper objectMapper;
-    private final InMemoryFilmManager filmManager = getDefaultFilmManager();
+    public FilmControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, FilmService filmService) {
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
+        this.filmService = filmService;
+    }
 
     @AfterEach
     public void ternDown() {
-        filmManager.removeAllFilm();
+        filmService.removeAllFilm();
     }
 
 

@@ -1,40 +1,94 @@
 package ru.yandex.practicum.filmorate.controller;
 
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import ru.yandex.practicum.filmorate.exception.NoParameterException;
 import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmManager;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Positive;
 
 import java.util.Collection;
-
-import static ru.yandex.practicum.filmorate.storage.Managers.getDefaultFilmManager;
+import java.util.Map;
 
 
 @RestController
+@RequestMapping("/films")
 public class FilmController {
+    FilmService filmService;
 
-    private final InMemoryFilmManager filmManager = getDefaultFilmManager();
-
-    @PostMapping("/films")
-    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
-        return filmManager.addFilm(film);
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
-    @PutMapping("/films")
-    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film film) {
-        return filmManager.updateFilm(film);
+    @PostMapping
+    public ResponseEntity<Map<String, Film>> addFilm(@Valid @RequestBody Film film) {
+        return filmService.addFilm(film);
     }
 
-    @GetMapping("/films")
-    public Collection<Film> getAllFilm() {
-        return filmManager.getAllFilm();
+    @PutMapping
+    public ResponseEntity<Map<String, Film>> updateFilm(@Valid @RequestBody Film film) {
+        return filmService.updateFilm(film);
     }
 
-    @DeleteMapping("/films")
+    @GetMapping("/{filmId}")
+    public ResponseEntity<Map<String, Film>> getFilmById(@RequestParam(required = false) @Positive Integer filmId) {
+        if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        return filmService.getFilmById(filmId);
+    }
+
+    @GetMapping
+    public ResponseEntity<Map<String, Collection<Film>>> getAllFilm() {
+        return filmService.getAllFilm();
+    }
+
+    @DeleteMapping
     public ResponseEntity<String> removeAllFilm() {
-        return filmManager.removeAllFilm();
+        return filmService.removeAllFilm();
+    }
+
+    @DeleteMapping("/{filmId}")
+    public ResponseEntity<Map<String, Film>> removeFilmById(@RequestParam(required = false) @Positive Integer filmId) {
+        if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        return filmService.removeFilmById(filmId);
+    }
+
+    @PutMapping("/{filmId}/like/{userId}")
+    public ResponseEntity<Map<String, Film>> addUserLikeByFilmId(@RequestParam(required = false) @Positive Integer filmId,
+                                                     @RequestParam(required = false) @Positive Integer userId) {
+        if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        if (userId == null) {
+            throw new NoParameterException("userId");
+        }
+        return filmService.addUserLikeByFilmId(filmId, userId);
+    }
+
+    @DeleteMapping("/{filmId}/like/{userId}")
+    public ResponseEntity<Map<String, Film>> removeUserLikeByFilmId(@RequestParam(required = false) @Positive Integer filmId,
+                                                                    @RequestParam(required = false) @Positive Integer userId) {
+        if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        if (userId == null) {
+            throw new NoParameterException("userId");
+        }
+        return filmService.removeUserLikeByFilmId(filmId, userId);
+    }
+
+    @GetMapping("/films/popular?count={count}")
+    public ResponseEntity<Map<String, Collection<Film>>> getFilmByPopular(@RequestParam(required = false) @Positive Integer count) {
+        if (count == null) {
+            throw new NoParameterException("count");
+        }
+        return filmService.getFilmByPopular(count);
     }
 }

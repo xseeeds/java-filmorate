@@ -11,7 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserManager;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
 
@@ -22,21 +24,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static ru.yandex.practicum.filmorate.storage.Managers.getDefaultUserManager;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UserControllerTest {
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
+    private final UserService userService;
 
     @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private ObjectMapper objectMapper;
-    private final InMemoryUserManager userManager = getDefaultUserManager();
+    public UserControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, UserService userService) {
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
+        this.userService = userService;
+    }
 
     @AfterEach
     void ternDown() {
-        userManager.removeAllUser();
+        userService.removeAllUser();
     }
 
 
@@ -340,5 +345,73 @@ public class UserControllerTest {
                         .content(IdIsEmptyUser))
                 .andExpect(status()
                         .isBadRequest());
+    }
+
+
+    @Test
+    @SneakyThrows
+    public void putUserEmailAndLoginConflictTest() {
+
+        String testUser = "{\n" +
+                "  \"login\": \"dolore\",\n" +
+                "  \"name\": \"Nick Name\",\n" +
+                "  \"email\": \"mail@mail.ru\",\n" +
+                "  \"birthday\": \"1946-08-20\"\n" +
+                "}";
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser));
+
+
+        String testUser2 = "{\n" +
+                "  \"login\": \"dolore123\",\n" +
+                "  \"name\": \"Nick Name\",\n" +
+                "  \"email\": \"mail123@mail.ru\",\n" +
+                "  \"birthday\": \"1946-08-20\"\n" +
+                "}";
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser2))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser2));
+
+
+
+        String existentLoginByUser = "{\n" +
+                "  \"login\": \"dolore123\",\n" +
+                "  \"name\": \"Nick123 Name123\",\n" +
+                "  \"id\": 1,\n" +
+                "  \"email\": \"mail@ya.ru\",\n" +
+                "  \"birthday\": \"1946-08-20\"\n" +
+                "}";
+
+        mockMvc.perform(put("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(existentLoginByUser))
+                .andExpect(status()
+                        .isConflict());
+
+
+        String existentEmailByUser = "{\n" +
+                "  \"login\": \"doloreYa\",\n" +
+                "  \"name\": \"Nick123 Name123\",\n" +
+                "  \"id\": 1,\n" +
+                "  \"email\": \"mail123@mail.ru\",\n" +
+                "  \"birthday\": \"1946-08-20\"\n" +
+                "}";
+
+        mockMvc.perform(put("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(existentEmailByUser))
+                .andExpect(status()
+                        .isConflict());
     }
 }
