@@ -11,16 +11,9 @@ import ru.yandex.practicum.filmorate.model.ErrorResponse;
 public class ErrorHandler {
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNoParameterException(final NoParameterException e) {
         return new ErrorResponse(
                 "400 (Bad request)", String.format("Ошибка с полем \"%s\".", e.getParameter()));
     }
-
-    /*@ExceptionHandler()
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleThrowable(final Throwable e) {
-        return new ErrorResponse(
-                "500 (Internal server error)", "Произошла непредвиденная ошибка.");
-    }*/
 }

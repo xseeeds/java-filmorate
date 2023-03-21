@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 
 
@@ -25,43 +24,55 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, User>> addUser(@Valid @RequestBody User user) {
+    public ResponseEntity<User> addUser(@Valid @RequestBody User user) {
         return userService.addUser(user);
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, User>> updateUser(@Valid @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) {
         return userService.updateUser(user);
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Collection<User>>> allUser() {
+    public ResponseEntity<Collection<User>> allUser() {
         return userService.getAllUser();
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<Map<String, User>> getUserById(@RequestParam @Positive Optional<Integer> userId) {
+    public ResponseEntity<User> getUserById(@PathVariable Optional<Integer> userId) {
         if (userId.isEmpty()) {
+            throw new NoParameterException("userId");
+        }
+        if (userId.get() <= 0) {
             throw new NoParameterException("userId");
         }
         return userService.getUserById(userId.get());
     }
 
     @PutMapping("/{userId}/friends/{friendId}")
-    public ResponseEntity<Map<String, Map<User, User>>> addFriends(@RequestParam @Positive Optional<Integer> userId,
-                                             @RequestParam @Positive Optional<Integer> friendId) {
-            if (userId.isEmpty()) {
-                throw new NoParameterException("userId");
-            }
-            if (friendId.isEmpty()) {
-                throw new NoParameterException("friendId");
-            }
-            return userService.addFriends(userId.get(), friendId.get());
+    public ResponseEntity<User> addFriends(@PathVariable Optional<Integer> userId,
+                                           @PathVariable Optional<Integer> friendId) {
+        if (userId.isEmpty()) {
+            throw new NoParameterException("userId");
+        }
+        if (userId.get() <= 0) {
+            throw new NoParameterException("userId");
+        }
+        if (friendId.isEmpty()) {
+            throw new NoParameterException("friendId");
+        }
+        if (friendId.get() <= 0) {
+            throw new NoParameterException("friendId");
+        }
+        return userService.addFriends(userId.get(), friendId.get());
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Map<String, User>> removeUserById(@RequestParam @Positive Optional<Integer> userId) {
+    public ResponseEntity<User> removeUserById(@PathVariable Optional<Integer> userId) {
         if (userId.isEmpty()) {
+            throw new NoParameterException("userId");
+        }
+        if (userId.get() <= 0) {
             throw new NoParameterException("userId");
         }
         return userService.removeUserById(userId.get());
@@ -73,32 +84,47 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}/friends/{friendId}")
-    public ResponseEntity<Map<String, Map<User, User>>> removeFriends(@RequestParam @Positive Optional<Integer> userId,
-                                             @RequestParam @Positive Optional<Integer> friendId) {
+    public ResponseEntity<User> removeFriends(@PathVariable Optional<Integer> userId,
+                                              @PathVariable Optional<Integer> friendId) {
         if (userId.isEmpty()) {
             throw new NoParameterException("userId");
         }
+        if (userId.get() <= 0) {
+            throw new NoParameterException("userId");
+        }
         if (friendId.isEmpty()) {
+            throw new NoParameterException("friendId");
+        }
+        if (friendId.get() <= 0) {
             throw new NoParameterException("friendId");
         }
         return userService.removeFriends(userId.get(), friendId.get());
     }
 
     @GetMapping("/{userId}/friends")
-    public ResponseEntity<Map<String, Collection<User>>> getFriends(@RequestParam @Positive Optional<Integer> userId) {
+    public ResponseEntity<Collection<User>> getFriends(@PathVariable Optional<Integer> userId) {
         if (userId.isEmpty()) {
+            throw new NoParameterException("userId");
+        }
+        if (userId.get() <= 0) {
             throw new NoParameterException("userId");
         }
         return userService.getFriends(userId.get());
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
-    public ResponseEntity<Map<String, Collection<User>>> getCommonFriends(@RequestParam @Positive Optional<Integer> userId,
-                                             @RequestParam @Positive Optional<Integer> otherId) {
+    public ResponseEntity<Collection<User>> getCommonFriends(@PathVariable Optional<Integer> userId,
+                                                             @PathVariable Optional<Integer> otherId) {
         if (userId.isEmpty()) {
             throw new NoParameterException("userId");
         }
+        if (userId.get() <= 0) {
+            throw new NoParameterException("userId");
+        }
         if (otherId.isEmpty()) {
+            throw new NoParameterException("otherId");
+        }
+        if (otherId.get() <= 0) {
             throw new NoParameterException("otherId");
         }
         return userService.getCommonFriends(userId.get(), otherId.get());

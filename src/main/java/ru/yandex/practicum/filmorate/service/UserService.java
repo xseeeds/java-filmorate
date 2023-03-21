@@ -11,9 +11,8 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
-import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -29,7 +28,7 @@ public class UserService {
     private Integer globalId = 0;
 
 
-    public ResponseEntity<Map<String, User>> addUser(User user) throws ResponseStatusException {
+    public ResponseEntity<User> addUser(User user) throws ResponseStatusException {
 
         if (user.getId() != 0) {
 
@@ -42,7 +41,7 @@ public class UserService {
         userStorage.checkUserLogin(user.getLogin());
         userStorage.checkUserEmail(user.getEmail());
 
-        if (user.getName() == null) {
+        if (user.getName() == null || user.getName().isBlank()) {
             userBuilder = user
                     .toBuilder()
                     .name(user.getLogin())
@@ -50,7 +49,7 @@ public class UserService {
                     .build();
         }
 
-        if (user.getId() == 0 & user.getName() != null) {
+        if (user.getName() != null && !user.getName().isBlank()) {
             userBuilder = user
                     .toBuilder()
                     .id(getNextId())
@@ -63,11 +62,11 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(Map.of("Пользователь создан", userBuilder));
+                .body(userBuilder);
     }
 
 
-    public ResponseEntity<Map<String, User>> updateUser(User newUser) throws ResponseStatusException {
+    public ResponseEntity<User> updateUser(User newUser) throws ResponseStatusException {
 
         if (newUser.getId() == 0) {
 
@@ -105,10 +104,10 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Пользователь обновлен", userBuilder));
+                .body(userBuilder);
     }
 
-    public ResponseEntity<Map<String, Collection<User>>> getAllUser() {
+    public ResponseEntity<Collection<User>> getAllUser() {
 
         final Collection<User> allUser = userStorage.getAllUser();
 
@@ -116,10 +115,10 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Все пользователи=>", allUser));
+                .body(allUser);
     }
 
-    public ResponseEntity<Map<String, User>> getUserById(int userId) throws ResponseStatusException {
+    public ResponseEntity<User> getUserById(int userId) throws ResponseStatusException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -127,7 +126,7 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Запрос пользователя по id ", user));
+                .body(user);
     }
 
     public ResponseEntity<String> removeAllUser() {
@@ -138,10 +137,10 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body("Все пользователи удалены.");
+                .body("205 (RESET_CONTENT) Все пользователи удалены.");
     }
 
-    public ResponseEntity<Map<String, User>> removeUserById(int userId) throws ResponseStatusException {
+    public ResponseEntity<User> removeUserById(int userId) throws ResponseStatusException {
 
         User user = userStorage.removeUserById(userId);
 
@@ -149,22 +148,20 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body(Map.of("Пользователь удален", user));
+                .body(user);
     }
 
-    public ResponseEntity<Map<String, Map<User, User>>> addFriends(int userId, int friendId) throws ResponseStatusException {
+    public ResponseEntity<User> addFriends(int userId, int friendId) throws ResponseStatusException {
 
         final User user = userStorage.getUserById(userId);
 
         final User friend = userStorage.getUserById(friendId);
 
-        checkFriendById(user, friendId);
-        checkFriendById(friend, userId);
+        checkUserFriendById(user, friendId, true);
+        checkUserFriendById(friend, userId, true);
 
         user.getFriendsIds().add(friendId);
         friend.getFriendsIds().add(userId);
-//        user.addFriendId(friendId);
-//        friend.addFriendId(userId);
 
         userStorage.userAddOrUpdate(user);
         userStorage.userAddOrUpdate(friend);
@@ -173,24 +170,20 @@ public class UserService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Friend с id=>" + friendId
-                                + " добавлен пользователю с id=>" + userId
-                        , Map.of(user, friend)));
+                .body(user);
     }
 
-    public ResponseEntity<Map<String, Map<User, User>>> removeFriends(int userId, int friendId) throws ResponseStatusException {
+    public ResponseEntity<User> removeFriends(int userId, int friendId) throws ResponseStatusException {
 
         final User user = userStorage.getUserById(userId);
 
         final User friend = userStorage.getUserById(friendId);
 
-        checkFriendById(user, friendId);
-        checkFriendById(friend, userId);
+        checkUserFriendById(user, friendId, false);
+        checkUserFriendById(friend, userId, false);
 
         user.getFriendsIds().remove(friendId);
         friend.getFriendsIds().remove(userId);
-//        user.removeFriendId(friendId);
-//        friend.removeFriendId(userId);
 
         userStorage.userAddOrUpdate(user);
         userStorage.userAddOrUpdate(friend);
@@ -198,17 +191,29 @@ public class UserService {
         log.info("Friend с id {} удален от пользователя: {}", friendId, user);
 
         return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body(Map.of("Friend с id=>" + friendId
-                                + " удален у пользователя с id=>" + userId
-                        , Map.of(user, friend)));
+                .status(HttpStatus.OK)
+                .body(user);
     }
 
-    public ResponseEntity<Map<String, Collection<User>>> getFriends(int userId) throws ResponseStatusException {
+    public ResponseEntity<Collection<User>> getFriends(int userId) throws ResponseStatusException {
 
         final User user = userStorage.getUserById(userId);
 
-        final Collection<User> allFriends = user
+        Collection<User> allFriends = new ArrayList<>();
+
+        try {
+            checkFriendsByUser(user);
+
+        } catch (ResponseStatusException e) {
+
+            log.info(e.getMessage());
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(allFriends);
+        }
+
+        allFriends = user
                 .getFriendsIds()
                 .stream()
                 .map(id -> {
@@ -220,23 +225,37 @@ public class UserService {
                     }
                     return friend;
                 })
-                .collect(toCollection(ArrayList::new));
+                .collect(toList());
 
         log.info("Текущее количество друзей пользователя с id=>{}; =>{}", userId, allFriends.size());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Друзья пользователя с id=>" + userId
-                        + "; =>", allFriends));
+                .body(allFriends);
     }
 
-    public ResponseEntity<Map<String, Collection<User>>> getCommonFriends(int userId, int friendId) throws ResponseStatusException {
+    public ResponseEntity<Collection<User>> getCommonFriends(int userId, int friendId) throws ResponseStatusException {
 
         final User user = userStorage.getUserById(userId);
 
         final User friend = userStorage.getUserById(friendId);
 
-        Collection<User> commonFriends = user
+        Collection<User> commonFriends = new ArrayList<>();
+
+        try {
+            checkFriendsByUser(user);
+            checkFriendsByUser(friend);
+
+        } catch (ResponseStatusException e) {
+
+            log.info(e.getMessage());
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(commonFriends);
+        }
+
+        commonFriends = user
                 .getFriendsIds()
                 .stream()
                 .filter(friend.getFriendsIds()::contains)
@@ -249,26 +268,48 @@ public class UserService {
                     }
                     return commonFriend;
                 })
-                .collect(toCollection(ArrayList::new));
+                .collect(toList());
 
         log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} => {}"
                 , userId, friendId, commonFriends.size());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Общие друзья пользователя с id=>" + userId
-                        + " и пользователя с id=>" + friendId
-                        + "; =>", commonFriends));
+                .body(commonFriends);
     }
 
-    private void checkFriendById(User user, int friendId) {
+    private void checkUserFriendById(User user, int friendId, boolean param) {
 
-        if (user.getFriendsIds().contains(friendId)) {
+        if (param) {
 
-            log.error("У пользователя с id=>{} уже существует друг id=>{}", user.getId(), friendId);
+            if (user.getFriendsIds().contains(friendId)) {
+
+                log.error("У пользователя с id=>{} уже существует друг id=>{}", user.getId(), friendId);
+
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "У пользователя с id=>" + user.getId() + " уже существует друг id=>" + friendId);
+            }
+
+        } else {
+
+            if (!user.getFriendsIds().contains(friendId)) {
+
+                log.error("У пользователя с id=>{} не существует друга id=>{}", user.getId(), friendId);
+
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "У пользователя с id=>" + user.getId() + " не существует друга id=>" + friendId);
+            }
+        }
+    }
+
+    private void checkFriendsByUser(User user) {
+
+        if (user.getFriendsIds().isEmpty()) {
+
+            log.error("У пользователя с id=>{} еще нет друзей", user.getId());
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "У пользователя с id=>" + user.getId() + " уже существует друг id=>" + friendId);
+                    "У пользователя с id=>" + user.getId() + " еще нет друзей");
         }
     }
 
@@ -280,30 +321,3 @@ public class UserService {
         globalId = 0;
     }
 }
-    /*Создайте UserService, который будет отвечать за такие операции с пользователями,
-        как добавление в друзья, удаление из друзей, вывод списка общих друзей.
-        Пока пользователям не надо одобрять заявки в друзья — добавляем сразу.
-        То есть если Лена стала другом Саши, то это значит, что Саша теперь друг Лены.
-        Создайте FilmService, который будет отвечать за операции с фильмами,
-        — добавление и удаление лайка, вывод 10 наиболее популярных фильмов по количеству лайков.
-        Пусть пока каждый пользователь может поставить лайк фильму только один раз.
-        Добавьте к ним аннотацию @Service — тогда к ним можно будет получить доступ из контроллера.*/
-
-    /*Дальше стоит заняться контроллерами и довести API до соответствия REST.
-        С помощью аннотации @PathVariable добавьте возможность получать
-        каждый фильм и данные о пользователях по их уникальному идентификатору: GET .../users/{id}.
-        Добавьте методы, позволяющие пользователям добавлять друг друга в друзья,
-        получать список общих друзей и лайкать фильмы. Проверьте, что все они работают корректно.
-
-        PUT /users/{id}/friends/{friendId} — добавление в друзья.
-        DELETE /users/{id}/friends/{friendId} — удаление из друзей.
-        GET /users/{id}/friends — возвращаем список пользователей, являющихся его друзьями.
-        GET /users/{id}/friends/common/{otherId} — список друзей, общих с другим пользователем.
-        PUT /films/{id}/like/{userId} — пользователь ставит лайк фильму.
-        DELETE /films/{id}/like/{userId} — пользователь удаляет лайк.
-        GET /films/popular?count={count} — возвращает список из первых count фильмов по количеству лайков. Если значение параметра count не задано, верните первые 10.
-
-        Убедитесь, что ваше приложение возвращает корректные HTTP-коды.
-        400 — если ошибка валидации: ValidationException;
-        404 — для всех ситуаций, если искомый объект не найден;
-        500 — если возникло исключение.*/

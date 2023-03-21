@@ -6,6 +6,7 @@ import nonapi.io.github.classgraph.json.Id;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Value
@@ -27,13 +28,5 @@ public class User {
     @Past
     LocalDate birthday;
 
-    Set<Integer> friendsIds;
-
-//    public void addFriendId(int friendId) {
-//        friendsIds.add(friendId);
-//    }
-//
-//    public void removeFriendId(int friendId) {
-//        friendsIds.remove(friendId);
-//    }
+    Set<Integer> friendsIds = new HashSet<>();
 }

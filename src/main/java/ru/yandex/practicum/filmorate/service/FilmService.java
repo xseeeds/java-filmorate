@@ -10,10 +10,10 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
-import static java.util.stream.Collectors.toCollection;
+
+import static java.util.stream.Collectors.toList;
+
 
 @Service
 @Slf4j
@@ -28,7 +28,7 @@ public class FilmService {
     }
 
 
-    public ResponseEntity<Map<String, Film>> addFilm(Film film) throws ResponseStatusException {
+    public ResponseEntity<Film> addFilm(Film film) throws ResponseStatusException {
 
         if (film.getId() != 0) {
 
@@ -46,10 +46,10 @@ public class FilmService {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(Map.of("Фильм добавлен c id=>" + film.getId(), film));
+                .body(film);
     }
 
-    public ResponseEntity<Map<String, Film>> getFilmById(int filmId) throws ResponseStatusException {
+    public ResponseEntity<Film> getFilmById(int filmId) throws ResponseStatusException {
 
         final Film film = filmStorage.getFilmById(filmId);
 
@@ -57,10 +57,10 @@ public class FilmService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Запрос пользователя по id ", film));
+                .body(film);
     }
 
-    public ResponseEntity<Map<String, Film>> updateFilm(Film film) throws ResponseStatusException {
+    public ResponseEntity<Film> updateFilm(Film film) throws ResponseStatusException {
 
         if (film.getId() == 0) {
 
@@ -80,10 +80,10 @@ public class FilmService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Фильм обновлен c id=>" + film.getId(), film));
+                .body(film);
     }
 
-    public ResponseEntity<Map<String, Collection<Film>>> getAllFilm() {
+    public ResponseEntity<Collection<Film>> getAllFilm() {
 
         final Collection<Film> allFilm = filmStorage.getAllFilm();
 
@@ -91,10 +91,10 @@ public class FilmService {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Все фильмы=>", allFilm));
+                .body(allFilm);
     }
 
-    public ResponseEntity<Map<String, Film>> removeFilmById(int filmId) throws ResponseStatusException {
+    public ResponseEntity<Film> removeFilmById(int filmId) throws ResponseStatusException {
 
         final Film film = filmStorage.removeFilmById(filmId);
 
@@ -102,7 +102,7 @@ public class FilmService {
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body(Map.of("Фильм удален c id=>" + filmId, film));
+                .body(film);
     }
 
     public ResponseEntity<String> removeAllFilm() {
@@ -113,22 +113,16 @@ public class FilmService {
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body("\"Все фильмы удалены.\"");
+                .body("205 (RESET_CONTENT) Все фильмы удалены.");
     }
 
-    public ResponseEntity<Map<String, Film>> addUserLikeByFilmId(int filmId, int userId) throws ResponseStatusException {
+    public ResponseEntity<Film> addUserLikeByFilmId(int filmId, int userId) throws ResponseStatusException {
 
         final Film film = filmStorage.getFilmById(filmId);
 
         userStorage.checkUserById(userId);
 
-        if (film.getLikes().contains(userId)) {
-
-            log.error("У фильма с id=>{} уже существует лайк пользователя с id=>{}", film.getId(), userId);
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "У фильма с id=>" + film.getId() + " уже существует лайк пользователя с id=>" + userId);
-        }
+        checkFilmLikeByUserId(film, userId, true);
 
         film.getLikes().add(userId);
 
@@ -137,23 +131,17 @@ public class FilmService {
         log.info("Пользователем c id=>{} добавлен лайк фильму c id=>{}", userId, filmId);
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(Map.of("Пользователем c id=>" + userId + " добавлен лайк фильму  id=>" + filmId, film));
+                .status(HttpStatus.OK)
+                .body(film);
     }
 
-    public ResponseEntity<Map<String, Film>> removeUserLikeByFilmId(int filmId, int userId) {
+    public ResponseEntity<Film> removeUserLikeByFilmId(int filmId, int userId) {
 
         final Film film = filmStorage.getFilmById(filmId);
 
         userStorage.checkUserById(userId);
 
-        if (!film.getLikes().contains(userId)) {
-
-            log.error("У фильма с id=>{} не существует лайка пользователя с id=>{}", film.getId(), userId);
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "У фильма с id=>" + film.getId() + " не существует лайка пользователя с id=>" + userId);
-        }
+        checkFilmLikeByUserId(film, userId, false);
 
         film.getLikes().remove(userId);
 
@@ -162,28 +150,52 @@ public class FilmService {
         log.info("Пользователем c id=>{} удален лайк у фильма c id=>{}", userId, filmId);
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(Map.of("Пользователем c id=>" + userId + " удален лайк у фильма c id=>" + filmId, film));
+                .status(HttpStatus.OK)
+                .body(film);
     }
 
-    public ResponseEntity<Map<String, Collection<Film>>> getFilmByPopular(int count) {
+    public ResponseEntity<Collection<Film>> getFilmByPopular(int count) {
 
         final Collection<Film> filmByPopular = filmStorage
                 .getAllFilm()
                 .stream()
                 .sorted(this::filmCompareByLikes)
                 .limit(count)
-                .collect(toCollection(ArrayList::new));
+                .collect(toList());
 
         log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Map.of("Запрос фильмов по полярности=>", filmByPopular));
+                .body(filmByPopular);
+    }
+
+    private void checkFilmLikeByUserId (Film film, int userId, boolean param) {
+
+        if (param) {
+
+            if (film.getLikes().contains(userId)) {
+
+                log.error("У фильма с id=>{} уже существует лайк пользователя с id=>{}", film.getId(), userId);
+
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "У фильма с id=>" + film.getId() + " уже существует лайк пользователя с id=>" + userId);
+            }
+
+        } else {
+
+            if (!film.getLikes().contains(userId)) {
+
+                log.error("У фильма с id=>{} не существует лайка пользователя с id=>{}", film.getId(), userId);
+
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "У фильма с id=>" + film.getId() + " не существует лайка пользователя с id=>" + userId);
+            }
+        }
     }
 
     private int filmCompareByLikes(Film f0, Film f1) {
-        return Integer.compare(f0.getLikes().size(), f1.getLikes().size());
+        return Integer.compare(f1.getLikes().size(), f0.getLikes().size());
     }
 
 

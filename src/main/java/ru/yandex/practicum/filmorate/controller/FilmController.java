@@ -11,8 +11,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 
 import java.util.Collection;
-import java.util.Map;
-
 
 @RestController
 @RequestMapping("/films")
@@ -25,25 +23,28 @@ public class FilmController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Film>> addFilm(@Valid @RequestBody Film film) {
+    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
         return filmService.addFilm(film);
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, Film>> updateFilm(@Valid @RequestBody Film film) {
+    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film film) {
         return filmService.updateFilm(film);
     }
 
     @GetMapping("/{filmId}")
-    public ResponseEntity<Map<String, Film>> getFilmById(@RequestParam(required = false) @Positive Integer filmId) {
+    public ResponseEntity<Film> getFilmById(@PathVariable(required = false) Integer filmId) {
         if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        if (filmId <= 0) {
             throw new NoParameterException("filmId");
         }
         return filmService.getFilmById(filmId);
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Collection<Film>>> getAllFilm() {
+    public ResponseEntity<Collection<Film>> getAllFilm() {
         return filmService.getAllFilm();
     }
 
@@ -53,40 +54,60 @@ public class FilmController {
     }
 
     @DeleteMapping("/{filmId}")
-    public ResponseEntity<Map<String, Film>> removeFilmById(@RequestParam(required = false) @Positive Integer filmId) {
+    public ResponseEntity<Film> removeFilmById(@PathVariable(required = false) Integer filmId) {
         if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        if (filmId <= 0) {
             throw new NoParameterException("filmId");
         }
         return filmService.removeFilmById(filmId);
     }
 
     @PutMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Map<String, Film>> addUserLikeByFilmId(@RequestParam(required = false) @Positive Integer filmId,
-                                                     @RequestParam(required = false) @Positive Integer userId) {
+    public ResponseEntity<Film> addUserLikeByFilmId(@PathVariable(required = false) Integer filmId,
+                                                    @PathVariable(required = false) Integer userId) {
         if (filmId == null) {
             throw new NoParameterException("filmId");
         }
+        if (filmId <= 0) {
+            throw new NoParameterException("filmId");
+        }
         if (userId == null) {
+            throw new NoParameterException("userId");
+        }
+        if (userId <= 0) {
             throw new NoParameterException("userId");
         }
         return filmService.addUserLikeByFilmId(filmId, userId);
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Map<String, Film>> removeUserLikeByFilmId(@RequestParam(required = false) @Positive Integer filmId,
-                                                                    @RequestParam(required = false) @Positive Integer userId) {
+    public ResponseEntity<Film> removeUserLikeByFilmId(@PathVariable(required = false) Integer filmId,
+                                                       @PathVariable(required = false) Integer userId) {
         if (filmId == null) {
+            throw new NoParameterException("filmId");
+        }
+        if (filmId <= 0) {
             throw new NoParameterException("filmId");
         }
         if (userId == null) {
             throw new NoParameterException("userId");
         }
+        if (userId <= 0) {
+            throw new NoParameterException("userId");
+        }
         return filmService.removeUserLikeByFilmId(filmId, userId);
     }
 
-    @GetMapping("/films/popular?count={count}")
-    public ResponseEntity<Map<String, Collection<Film>>> getFilmByPopular(@RequestParam(required = false) @Positive Integer count) {
+    @GetMapping("/popular")
+    public ResponseEntity<Collection<Film>> getFilmByPopular(
+            @RequestParam                                                           //?count={count}
+                    (value = "count", defaultValue = "10", required = false) Integer count) {
         if (count == null) {
+            throw new NoParameterException("count");
+        }
+        if (count <= 0) {
             throw new NoParameterException("count");
         }
         return filmService.getFilmByPopular(count);
