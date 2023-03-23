@@ -35,11 +35,11 @@ public class UserService {
             log.error("POST request. Для обновления используй PUT запрос, user имеет id!!! => {}", user);
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "POST request. Для обновления используй PUT запрос");
+                    "POST request. Для обновления используй PUT запрос, user имеет id!!! =>" + user);
         }
 
-        userStorage.checkUserLogin(user.getLogin());
-        userStorage.checkUserEmail(user.getEmail());
+        checkUserLogin(user.getLogin());
+        checkUserEmail(user.getEmail());
 
         if (user.getName() == null || user.getName().isBlank()) {
             userBuilder = user
@@ -73,12 +73,12 @@ public class UserService {
             log.error("PUT request. Для обновления используй id!!! в теле запроса newUser => {}", newUser);
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PUT request. Для обновления используй id в теле запроса");
+                    "PUT request. Для обновления используй id!!! в теле запроса newUser => " + newUser);
         }
 
-        userStorage.checkUserById(newUser.getId());
-        userStorage.checkUserIdOnLogin(newUser.getLogin(), newUser.getId());
-        userStorage.checkUserIdOnEmail(newUser.getEmail(), newUser.getId());
+        checkUserById(newUser.getId());
+        checkUserIdOnLogin(newUser.getLogin(), newUser.getId());
+        checkUserIdOnEmail(newUser.getEmail(), newUser.getId());
 
         final User oldUser = userStorage.getUserById(newUser.getId());
 
@@ -133,18 +133,20 @@ public class UserService {
 
         userStorage.removeAllUser();
         resetGlobalId();
-        log.info("Все пользователи удалены.");
+        log.info("Все пользователи удалены. id сброшен");
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body("205 (RESET_CONTENT) Все пользователи удалены.");
+                .body("205 (RESET_CONTENT) Все пользователи удалены. id сброшен");
     }
 
     public ResponseEntity<User> removeUserById(int userId) throws ResponseStatusException {
 
-        User user = userStorage.removeUserById(userId);
+        final User user = userStorage.removeUserById(userId);
 
-        log.info("Пользователь {} удален.", user);
+        userStorage.getAllUser().forEach(u -> u.getFriendsIds().remove(userId));
+
+        log.info("Пользователь {} удален/удален от всех друзей", user);
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
@@ -278,6 +280,8 @@ public class UserService {
                 .body(commonFriends);
     }
 
+
+
     private void checkUserFriendById(User user, int friendId, boolean param) {
 
         if (param) {
@@ -310,6 +314,82 @@ public class UserService {
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "У пользователя с id=>" + user.getId() + " еще нет друзей");
+        }
+    }
+
+    public void checkUserById(int userId) {
+
+        if (userStorage.getUserById(userId) == null) {
+
+            log.error("Такой пользователь c id=>{} не существует", userId);
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой пользователь c id=>" + userId + " не существует");
+        }
+    }
+
+    public void checkUserLogin(String newUserLogin) {
+
+        final int existentId = userStorage.getIdOnLogin(newUserLogin);
+
+        if (existentId != 0) {
+
+            log.error("Такой пользователь с login: {} уже существует, по id=>{}," +
+                    " для обновления используй PUT запрос", newUserLogin, existentId);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с login:"
+                            + newUserLogin
+                            + " уже существует, для обновления используй PUT запрос");
+        }
+    }
+
+    public void checkUserEmail(String newUserEmail) {
+
+        final int existentId = userStorage.getIdOnEmail(newUserEmail);
+
+        if (existentId != 0) {
+
+            log.error("Такой пользователь с email: {} уже существует, по id=>{}," +
+                    " для обновления используй PUT запрос", newUserEmail, existentId);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с email:"
+                            + newUserEmail
+                            + " уже существует, по id=> "
+                            + existentId
+                            + " для обновления используй PUT запрос");
+        }
+    }
+
+    public void checkUserIdOnLogin(String updateUserLogin, int updateUserId) {
+
+        final int existentId = userStorage.getIdOnLogin(updateUserLogin);
+
+        if (existentId != updateUserId & existentId != 0) {
+
+            log.error("Такой пользователь с login: {} уже существует, по id=>{}", updateUserLogin, existentId);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с login: "
+                            + updateUserLogin
+                            + " уже существует, по id=>" + existentId);
+        }
+
+    }
+
+    public void checkUserIdOnEmail(String updateUserEmail, int updateUserId) {
+
+        final int existentId = userStorage.getIdOnEmail(updateUserEmail);
+
+        if (existentId != updateUserId & existentId != 0) {
+
+            log.error("Такой пользователь с email: {} уже существует, по id=>{}", updateUserEmail, existentId);
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой пользователь с email:"
+                            + updateUserEmail
+                            + " уже существует, по id=>" + existentId);
         }
     }
 

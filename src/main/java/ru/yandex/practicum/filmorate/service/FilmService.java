@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
 
@@ -18,13 +17,14 @@ import static java.util.stream.Collectors.toList;
 @Service
 @Slf4j
 public class FilmService {
-    FilmStorage filmStorage;
-    UserStorage userStorage;
+    private final FilmStorage filmStorage;
+    private final UserService userService;
+    private Integer globalId = 0;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(FilmStorage filmStorage, UserService userService) {
         this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
+        this.userService = userService;
     }
 
 
@@ -35,14 +35,15 @@ public class FilmService {
             log.error("POST request. Для обновления используй PUT запрос, film имеет id => {}", film);
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "POST request. Для обновления используй PUT запрос");
+                    "POST request. Для обновления используй PUT запрос, film имеет id!!! =>" + film);
         }
 
-        filmStorage.checkFilm(film);
+        checkFilm(film);
 
+        film.setId(getNextId());
         filmStorage.addFilm(film);
 
-        log.info("newFilm {}", film);
+        log.info("Фильм добавлен =>{}", film);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -67,14 +68,14 @@ public class FilmService {
             log.error("PUT request. Для обновления используй id в теле запроса film => {}", film);
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PUT request. Для обновления используй id в теле запроса");
+                    "PUT request. Для обновления используй id в теле запроса film => " + film);
         }
 
-        filmStorage.checkFilmById(film.getId());
+        checkFilmById(film.getId());
 
-        filmStorage.checkFilmByNameReleaseDateDuration(film);
+        checkFilmByNameReleaseDateDuration(film);
 
-        log.info("updateFilm {}", film);
+        log.info("Фильм обновлен =>{}", film);
 
         filmStorage.updateFilm(film);
 
@@ -87,7 +88,7 @@ public class FilmService {
 
         final Collection<Film> allFilm = filmStorage.getAllFilm();
 
-        log.info("Текущее количество фильмов : {}", allFilm.size());
+        log.info("Фильм получены (кол-во) =>{}", allFilm.size());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -108,19 +109,20 @@ public class FilmService {
     public ResponseEntity<String> removeAllFilm() {
 
         filmStorage.removeAllFilm();
+        resetGlobalId();
 
-        log.info("Все фильмы удалены.");
+        log.info("Все фильмы удалены, id сброшен");
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)
-                .body("205 (RESET_CONTENT) Все фильмы удалены.");
+                .body("205 (RESET_CONTENT) Все фильмы удалены. id сброшен");
     }
 
     public ResponseEntity<Film> addUserLikeByFilmId(int filmId, int userId) throws ResponseStatusException {
 
         final Film film = filmStorage.getFilmById(filmId);
 
-        userStorage.checkUserById(userId);
+        userService.checkUserById(userId);
 
         checkFilmLikeByUserId(film, userId, true);
 
@@ -139,7 +141,7 @@ public class FilmService {
 
         final Film film = filmStorage.getFilmById(filmId);
 
-        userStorage.checkUserById(userId);
+        userService.checkUserById(userId);
 
         checkFilmLikeByUserId(film, userId, false);
 
@@ -194,10 +196,63 @@ public class FilmService {
         }
     }
 
+    private void checkFilmByNameReleaseDateDuration(Film film) {
+
+        final Film existentFilm = filmStorage.getFilm(film);
+
+        if (existentFilm != null) {
+
+            log.error("Такой фильм: {} уже существует по id {}", film, existentFilm.getId());
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой фильм: "
+                            + film
+                            + " уже существует, по id: " + existentFilm.getId());
+        }
+    }
+
+    private void checkFilm(Film film) {
+
+        final Film existentFilm = filmStorage.getFilm(film);
+
+        if (existentFilm != null) {
+
+            log.error("Такой фильм: {} уже существует, по id=>{}," +
+                    " для обновления используй PUT запрос", film, film.getId());
+
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Такой фильм: " + film
+                            + " уже существует, по id=>" + film.getId()
+                            + " для обновления используй PUT запрос");
+        }
+    }
+
+    private void checkFilmById(int filmId) {
+
+        final Integer existentId = filmStorage.getIdExistentFilm(filmId);
+
+        if (existentId == null) {
+
+            log.error("Такой фильм с id: {} не существует", filmId);
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Такой фильм с id: "
+                            + filmId
+                            + " не существует");
+        }
+    }
+
     private int filmCompareByLikes(Film f0, Film f1) {
         return Integer.compare(f1.getLikes().size(), f0.getLikes().size());
     }
 
+    private Integer getNextId() {
+        return ++globalId;
+    }
+
+    private void resetGlobalId() {
+        globalId = 0;
+    }
 
     /*private int setRatingFilm(Film film) {
         return film.getLikes().values().stream().mapToInt(Integer::intValue).sum() / likes.size();

@@ -16,15 +16,9 @@ public interface UserStorage {
 
     User removeUserById(int userId);
 
-    void checkUserLogin(String newUserLogin);
+    int getIdOnLogin(String userLogin);
 
-    void checkUserEmail(String newUserEmail);
-
-    void checkUserById(int userId);
-
-    void checkUserIdOnLogin(String updateUserLogin, int updateUserId);
-
-    void checkUserIdOnEmail(String updateUserEmail, int updateUserId);
+    int getIdOnEmail(String userEmail);
 
     void removeOldIdByLogin(String userLogin);
 

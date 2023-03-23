@@ -6,10 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.util.Optional;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.TreeSet;
+import java.util.*;
 
 
 @Component
@@ -19,98 +16,63 @@ public class InMemoryFilm implements FilmStorage {
             .comparing(Film::getName)
             .thenComparing(Film::getReleaseDate)
             .thenComparing(Film::getDuration));
-
-    private Integer globalId = 0;
     private final TreeSet<Integer> idsFilms = new TreeSet<>();
 
     @Override
     public void addFilm(Film film) {
-
-        film.setId(getNextId());
         films.add(film);
         idsFilms.add(film.getId());
-
-        log.info("Фильм добавлен =>{}", film);
     }
 
     @Override
-    public void checkFilmByNameReleaseDateDuration(Film film) {
-
+    public Film getFilm(Film film) {
         Film ceil = films.ceiling(film);
         Film floor = films.floor(film);
-
-        Film existentFilm = ceil == floor ? ceil : null;
-
-        if (existentFilm != null) {
-
-            log.error("Такой фильм: {} уже существует по id {}", film, existentFilm.getId());
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой фильм: "
-                            + film
-                            + " уже существует, по id: " + existentFilm.getId());
-        }
+        return Objects.equals(ceil, floor) ? ceil : null;
     }
 
     @Override
     public Film getFilmById(int filmId) {
-
         Optional<Film> film = films
                 .stream()
                 .filter(f -> f.getId() == filmId)
                 .findFirst();
 
         if (film.isEmpty()) {
-
             log.error("Такой фильм с id: {} не существует", filmId);
-
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Такой фильм с id: "
                             + filmId
                             + " не существует");
         }
-        log.info("Фильм получен =>{}", film);
-
         return film.get();
     }
 
     @Override
     public void updateFilm(Film film) {
-
         Optional<Film> oldFilm = films
                 .stream()
                 .filter(f -> f.getId() == film.getId())
                 .findFirst();
-
         if (oldFilm.isPresent()) {
-
             films.remove(oldFilm.get());
             films.add(film);
-
-            log.info("Фильм обновлен =>{}", film);
         }
     }
 
     @Override
     public Collection<Film> getAllFilm() {
-
-        log.info("Фильм получены (кол-во) =>{}", films.size());
-
         return films;
     }
 
     @Override
     public Film removeFilmById(int filmId) {
-
         Optional<Film> film = films
                 .stream()
                 .filter(f -> f.getId() == filmId)
                 .findFirst();
-
         if (film.isEmpty()) {
-
             log.error("Такой фильм с id: {} не существует", filmId);
-
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Такой фильм с id: "
                             + filmId
@@ -118,55 +80,20 @@ public class InMemoryFilm implements FilmStorage {
         }
         films.remove(film.get());
         idsFilms.remove(filmId);
-
-        log.info("Фильм удален =>{}", film);
-
         return film.get();
     }
 
     @Override
     public void removeAllFilm() {
-
         films.clear();
         idsFilms.clear();
-        resetGlobalId();
-
-        log.info("Все фильмы удалены, фильм id сброшен");
     }
 
     @Override
-    public void checkFilm(Film film) {
-
-        if (films.contains(film)) {
-
-            log.error("Такой фильм: {} уже существует, для обновления используй PUT запрос", film);
-
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой фильм: "
-                            + film
-                            + " уже существует, для обновления используй PUT запрос");
-        }
+    public Integer getIdExistentFilm(int filmId) {
+        Integer ceil = idsFilms.ceiling(filmId);
+        Integer floor = idsFilms.floor(filmId);
+        return Objects.equals(ceil, floor) ? ceil : null;
     }
 
-    @Override
-    public void checkFilmById(int filmId) {
-
-        if (!idsFilms.contains(filmId)) {
-
-            log.error("Такой фильм с id: {} не существует", filmId);
-
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой фильм с id: "
-                            + filmId
-                            + " не существует");
-        }
-    }
-
-    private Integer getNextId() {
-        return ++globalId;
-    }
-
-    private void resetGlobalId() {
-        globalId = 0;
-    }
 }

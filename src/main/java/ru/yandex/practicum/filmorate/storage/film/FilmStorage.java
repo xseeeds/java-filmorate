@@ -8,7 +8,7 @@ public interface FilmStorage {
 
     void addFilm(Film film);
 
-    void checkFilmByNameReleaseDateDuration(Film film);
+    Film getFilm(Film film);
 
     Film getFilmById(int filmId);
 
@@ -20,8 +20,6 @@ public interface FilmStorage {
 
     void removeAllFilm();
 
-    void checkFilm(Film film);
-
-    void checkFilmById(int filmId);
+    Integer getIdExistentFilm(int filmId);
 
 }
