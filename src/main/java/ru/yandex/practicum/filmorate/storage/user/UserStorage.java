@@ -16,15 +16,15 @@ public interface UserStorage {
 
     User removeUserById(int userId);
 
-    void checkUserLogin(String userLogin);
+    void checkUserLogin(String newUserLogin);
 
-    void checkUserEmail(String userEmail);
+    void checkUserEmail(String newUserEmail);
 
     void checkUserById(int userId);
 
-    void checkUserIdOnLogin(String newUserLogin, int newUserId);
+    void checkUserIdOnLogin(String updateUserLogin, int updateUserId);
 
-    void checkUserIdOnEmail(String newUserEmail, int newUserId);
+    void checkUserIdOnEmail(String updateUserEmail, int updateUserId);
 
     void removeOldIdByLogin(String userLogin);
 

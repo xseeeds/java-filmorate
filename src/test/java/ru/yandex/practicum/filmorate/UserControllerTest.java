@@ -432,7 +432,7 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    void addAndDeleteUserFriendsAndDeleteUserCheckFriendTest() {
+    void addAndDeleteUserFriendsAndDeleteUserByIdCheckFriendTest() {
 
         String testUser = "{\n" +
                 "  \"login\": \"dolore\",\n" +
@@ -504,6 +504,9 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.friendsIds")
                         .isEmpty());
 
+
+        mockMvc.perform(delete("/users/4"))
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(delete("/users/3"))
                 .andExpect(status().isResetContent());

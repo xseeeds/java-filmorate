@@ -14,7 +14,7 @@ import java.util.TreeSet;
 
 @Component
 @Slf4j
-public class InMemoryFilmManager implements FilmStorage {
+public class InMemoryFilm implements FilmStorage {
     private final TreeSet<Film> films = new TreeSet<>(Comparator
             .comparing(Film::getName)
             .thenComparing(Film::getReleaseDate)
@@ -25,9 +25,12 @@ public class InMemoryFilmManager implements FilmStorage {
 
     @Override
     public void addFilm(Film film) {
+
         film.setId(getNextId());
         films.add(film);
         idsFilms.add(film.getId());
+
+        log.info("Фильм добавлен =>{}", film);
     }
 
     @Override
@@ -51,6 +54,7 @@ public class InMemoryFilmManager implements FilmStorage {
 
     @Override
     public Film getFilmById(int filmId) {
+
         Optional<Film> film = films
                 .stream()
                 .filter(f -> f.getId() == filmId)
@@ -65,6 +69,8 @@ public class InMemoryFilmManager implements FilmStorage {
                             + filmId
                             + " не существует");
         }
+        log.info("Фильм получен =>{}", film);
+
         return film.get();
     }
 
@@ -77,22 +83,30 @@ public class InMemoryFilmManager implements FilmStorage {
                 .findFirst();
 
         if (oldFilm.isPresent()) {
+
             films.remove(oldFilm.get());
             films.add(film);
+
+            log.info("Фильм обновлен =>{}", film);
         }
     }
 
     @Override
     public Collection<Film> getAllFilm() {
+
+        log.info("Фильм получены (кол-во) =>{}", films.size());
+
         return films;
     }
 
     @Override
     public Film removeFilmById(int filmId) {
+
         Optional<Film> film = films
                 .stream()
                 .filter(f -> f.getId() == filmId)
                 .findFirst();
+
         if (film.isEmpty()) {
 
             log.error("Такой фильм с id: {} не существует", filmId);
@@ -104,14 +118,20 @@ public class InMemoryFilmManager implements FilmStorage {
         }
         films.remove(film.get());
         idsFilms.remove(filmId);
+
+        log.info("Фильм удален =>{}", film);
+
         return film.get();
     }
 
     @Override
     public void removeAllFilm() {
+
         films.clear();
         idsFilms.clear();
         resetGlobalId();
+
+        log.info("Все фильмы удалены, фильм id сброшен");
     }
 
     @Override
@@ -140,7 +160,6 @@ public class InMemoryFilmManager implements FilmStorage {
                             + filmId
                             + " не существует");
         }
-        //films.stream().noneMatch(film -> film.getId() == filmId);
     }
 
     private Integer getNextId() {

@@ -33,7 +33,8 @@ public class FilmController {
     }
 
     @GetMapping("/{filmId}")
-    public ResponseEntity<Film> getFilmById(@PathVariable(required = false) Integer filmId) {
+    public ResponseEntity<Film> getFilmById(@PathVariable @Valid @Positive Integer filmId) {
+
         if (filmId == null) {
             throw new NoParameterException("filmId");
         }
@@ -54,7 +55,8 @@ public class FilmController {
     }
 
     @DeleteMapping("/{filmId}")
-    public ResponseEntity<Film> removeFilmById(@PathVariable(required = false) Integer filmId) {
+    public ResponseEntity<Film> removeFilmById(@PathVariable @Valid @Positive Integer filmId) {
+
         if (filmId == null) {
             throw new NoParameterException("filmId");
         }
@@ -65,16 +67,11 @@ public class FilmController {
     }
 
     @PutMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Film> addUserLikeByFilmId(@PathVariable(required = false) Integer filmId,
-                                                    @PathVariable(required = false) Integer userId) {
-        if (filmId == null) {
-            throw new NoParameterException("filmId");
-        }
+    public ResponseEntity<Film> addUserLikeByFilmId(@PathVariable @Valid @Positive Integer filmId,
+                                                    @PathVariable @Valid @Positive Integer userId) {
+
         if (filmId <= 0) {
             throw new NoParameterException("filmId");
-        }
-        if (userId == null) {
-            throw new NoParameterException("userId");
         }
         if (userId <= 0) {
             throw new NoParameterException("userId");
@@ -83,16 +80,11 @@ public class FilmController {
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Film> removeUserLikeByFilmId(@PathVariable(required = false) Integer filmId,
-                                                       @PathVariable(required = false) Integer userId) {
-        if (filmId == null) {
-            throw new NoParameterException("filmId");
-        }
+    public ResponseEntity<Film> removeUserLikeByFilmId(@PathVariable @Valid @Positive Integer filmId,
+                                                       @PathVariable @Valid @Positive Integer userId) {
+
         if (filmId <= 0) {
             throw new NoParameterException("filmId");
-        }
-        if (userId == null) {
-            throw new NoParameterException("userId");
         }
         if (userId <= 0) {
             throw new NoParameterException("userId");
@@ -104,9 +96,7 @@ public class FilmController {
     public ResponseEntity<Collection<Film>> getFilmByPopular(
             @RequestParam                                                           //?count={count}
                     (value = "count", defaultValue = "10", required = false) Integer count) {
-        if (count == null) {
-            throw new NoParameterException("count");
-        }
+
         if (count <= 0) {
             throw new NoParameterException("count");
         }

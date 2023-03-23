@@ -462,6 +462,41 @@ public class FilmControllerTest {
                 .andExpect(jsonPath("$.likes")
                         .isEmpty());
 
+
         mockMvc.perform(delete("/users"));
+    }
+
+
+    @Test
+    @SneakyThrows
+    void getAndDeleteFilmByIdTest() {
+
+        String testFilm1 = "{\n" +
+                "  \"name\": \"nisi eiusmod\",\n" +
+                "  \"description\": \"adipisicing\",\n" +
+                "  \"releaseDate\": \"1967-03-25\",\n" +
+                "  \"duration\": 100\n" +
+                "}";
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testFilm1))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testFilm1));
+
+
+        mockMvc.perform(get("/films/1"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(content()
+                        .json(testFilm1));
+
+        mockMvc.perform(delete("/films/2"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/films/1"))
+                .andExpect(status().isResetContent());
     }
 }

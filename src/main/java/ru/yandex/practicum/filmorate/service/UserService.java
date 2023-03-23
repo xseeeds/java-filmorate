@@ -144,7 +144,7 @@ public class UserService {
 
         User user = userStorage.removeUserById(userId);
 
-        log.info("Пользователь с {} удален.", user);
+        log.info("Пользователь {} удален.", user);
 
         return ResponseEntity
                 .status(HttpStatus.RESET_CONTENT)

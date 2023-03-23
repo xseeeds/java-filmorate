@@ -12,7 +12,7 @@ import java.util.TreeMap;
 
 @Component
 @Slf4j
-public class InMemoryUserManager implements UserStorage {
+public class InMemoryUser implements UserStorage {
     private final TreeMap<Integer, User> users = new TreeMap<>();
     private final TreeMap<String, Integer> userEmails = new TreeMap<>();
     private final TreeMap<String, Integer> userLogins = new TreeMap<>();
@@ -20,9 +20,12 @@ public class InMemoryUserManager implements UserStorage {
 
     @Override
     public void userAddOrUpdate(User user) {
+
         users.put(user.getId(), user);
         userEmails.put(user.getEmail(), user.getId());
         userLogins.put(user.getLogin(), user.getId());
+
+        log.info("Пользователь добавлен/обновлен =>{}", user);
     }
 
     @Override
@@ -36,6 +39,8 @@ public class InMemoryUserManager implements UserStorage {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Такой пользователь c id=>" + userId + " не существует");
         }
+        log.info("Пользователь получен =>{}", user);
+
         return user;
     }
 
@@ -46,9 +51,12 @@ public class InMemoryUserManager implements UserStorage {
 
     @Override
     public void removeAllUser() {
+
         users.clear();
         userLogins.clear();
         userEmails.clear();
+
+        log.info("Все пользователи удалены");
     }
 
     @Override
@@ -63,6 +71,8 @@ public class InMemoryUserManager implements UserStorage {
 
             users.values().forEach(u -> u.getFriendsIds().remove(userId));
 
+            log.info("Пользователь удален/удален у всех друзей =>{}", user);
+
             return user;
         }
         log.error("Такой пользователь с id: {} не существует", userId);
@@ -72,30 +82,33 @@ public class InMemoryUserManager implements UserStorage {
     }
 
     @Override
-    public void checkUserLogin(String userLogin) {
+    public void checkUserLogin(String newUserLogin) {
 
-        if (userLogins.containsKey(userLogin)) {
+        if (userLogins.containsKey(newUserLogin)) {
 
-            log.error("Такой пользователь с login: {} уже существует, для обновления используй PUT запрос", userLogin);
+            log.error("Такой пользователь с login: {} уже существует, для обновления используй PUT запрос", newUserLogin);
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Такой пользователь с login:"
-                            + userLogin
+                            + newUserLogin
                             + " уже существует, для обновления используй PUT запрос");
         }
     }
 
     @Override
-    public void checkUserEmail(String userEmail) {
+    public void checkUserEmail(String newUserEmail) {
 
-        if (userEmails.containsKey(userEmail)) {
+        if (userEmails.containsKey(newUserEmail)) {
 
-            log.error("Такой пользователь с email: {} уже существует, для обновления используй PUT запрос", userEmail);
+            log.error("Такой пользователь с email: {} уже существует, по id=>{}," +
+                            " для обновления используй PUT запрос", newUserEmail, userEmails.get(newUserEmail));
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Такой пользователь с email:"
-                            + userEmail
-                            + " уже существует, для обновления используй PUT запрос");
+                            + newUserEmail
+                            + " уже существует, по id=> "
+                            + userEmails.get(newUserEmail)
+                            + " для обновления используй PUT запрос");
 
         }
     }
@@ -113,34 +126,34 @@ public class InMemoryUserManager implements UserStorage {
     }
 
     @Override
-    public void checkUserIdOnLogin(String newUserLogin, int newUserId) {
+    public void checkUserIdOnLogin(String updateUserLogin, int updateUserId) {
 
-        final int existentId = userLogins.getOrDefault(newUserLogin, 0);
+        final Integer existentId = userLogins.getOrDefault(updateUserLogin, 0);
 
-        if (existentId != newUserId & existentId != 0) {
+        if (existentId != updateUserId & existentId != 0) {
 
-            log.error("Такой пользователь с login: {} уже существует, по id=>{}", newUserLogin, existentId);
+            log.error("Такой пользователь с login: {} уже существует, по id=>{}", updateUserLogin, existentId);
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Такой пользователь с login: "
-                            + newUserLogin
+                            + updateUserLogin
                             + " уже существует, по id=>" + existentId);
         }
 
     }
 
     @Override
-    public void checkUserIdOnEmail(String newUserEmail, int newUserId) {
+    public void checkUserIdOnEmail(String updateUserEmail, int updateUserId) {
 
-        int existentId = userEmails.getOrDefault(newUserEmail, 0);
+        final int existentId = userEmails.getOrDefault(updateUserEmail, 0);
 
-        if (existentId != newUserId & existentId != 0) {
+        if (existentId != updateUserId & existentId != 0) {
 
-            log.error("Такой пользователь с email: {} уже существует, по id=>{}", newUserEmail, existentId);
+            log.error("Такой пользователь с email: {} уже существует, по id=>{}", updateUserEmail, existentId);
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Такой пользователь с email:"
-                            + newUserEmail
+                            + updateUserEmail
                             + " уже существует, по id=>" + existentId);
         }
     }
