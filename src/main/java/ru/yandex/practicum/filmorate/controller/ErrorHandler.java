@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RestControllerAdvice("ru.yandex.practicum.filmorate.controller")
 public class ErrorHandler {
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException.class)
     public ValidationErrorResponse onConstraintValidationException(
             ConstraintViolationException e
@@ -32,7 +32,7 @@ public class ErrorHandler {
         return new ValidationErrorResponse(violations);
     }
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ValidationErrorResponse onMethodArgumentNotValidException(
             MethodArgumentNotValidException e
@@ -40,7 +40,12 @@ public class ErrorHandler {
         final List<Violation> violations = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error -> new Violation(error.getField(), error.getDefaultMessage()))
+                .map(
+                        error -> new Violation(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
+                )
                 .collect(Collectors.toList());
         return new ValidationErrorResponse(violations);
     }
