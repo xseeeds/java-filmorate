@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import nonapi.io.github.classgraph.json.Id;
 import org.hibernate.validator.constraints.Length;
 import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthday;
 
@@ -15,7 +14,7 @@ import java.util.Set;
 @Data
 public class Film {
 
-    @Id
+    @PositiveOrZero
     @EqualsAndHashCode.Exclude
     private int id;
 

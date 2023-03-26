@@ -2,10 +2,10 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.BadRequestException;
+import ru.yandex.practicum.filmorate.exception.ConflictException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -28,14 +28,13 @@ public class UserService {
     private Integer globalId = 0;
 
 
-    public ResponseEntity<User> addUser(User user) throws ResponseStatusException {
+    public User addUser(User user) throws ConflictException, BadRequestException {
 
         if (user.getId() != 0) {
 
             log.error("POST request. Для обновления используй PUT запрос, user имеет id!!! => {}", user);
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "POST request. Для обновления используй PUT запрос, user имеет id!!! =>" + user);
+            throw new BadRequestException("POST request. Для обновления используй PUT запрос, user имеет id!!! => " + user);
         }
 
         checkUserLogin(user.getLogin());
@@ -60,20 +59,17 @@ public class UserService {
 
         log.info("newUser {}", userBuilder);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(userBuilder);
+        return userBuilder;
     }
 
 
-    public ResponseEntity<User> updateUser(User newUser) throws ResponseStatusException {
+    public User updateUser(User newUser) throws NotFoundException, ConflictException, BadRequestException {
 
         if (newUser.getId() == 0) {
 
             log.error("PUT request. Для обновления используй id!!! в теле запроса newUser => {}", newUser);
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PUT request. Для обновления используй id!!! в теле запроса newUser => " + newUser);
+            throw new BadRequestException("PUT request. Для обновления используй id!!! в теле запроса newUser => " + newUser);
         }
 
         checkUserById(newUser.getId());
@@ -102,45 +98,37 @@ public class UserService {
 
         log.info("Пользователь обновлен {}", userBuilder);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(userBuilder);
+        return userBuilder;
     }
 
-    public ResponseEntity<Collection<User>> getAllUser() {
+    public Collection<User> getAllUser() {
 
         final Collection<User> allUser = userStorage.getAllUser();
 
         log.info("Текущее количество пользователей : {}", allUser.size());
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(allUser);
+        return allUser;
     }
 
-    public ResponseEntity<User> getUserById(int userId) throws ResponseStatusException {
+    public User getUserById(int userId) throws NotFoundException {
 
         final User user = userStorage.getUserById(userId);
 
         log.info("Пользователь получен : {}", user);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(user);
+        return user;
     }
 
-    public ResponseEntity<String> removeAllUser() {
+    public String removeAllUser() {
 
         userStorage.removeAllUser();
         resetGlobalId();
         log.info("Все пользователи удалены. id сброшен");
 
-        return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body("205 (RESET_CONTENT) Все пользователи удалены. id сброшен");
+        return "205 (RESET_CONTENT) Все пользователи удалены. id сброшен";
     }
 
-    public ResponseEntity<User> removeUserById(int userId) throws ResponseStatusException {
+    public User removeUserById(int userId) throws NotFoundException {
 
         final User user = userStorage.removeUserById(userId);
 
@@ -148,12 +136,10 @@ public class UserService {
 
         log.info("Пользователь {} удален/удален от всех друзей", user);
 
-        return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body(user);
+        return user;
     }
 
-    public ResponseEntity<User> addFriends(int userId, int friendId) throws ResponseStatusException {
+    public User addFriends(int userId, int friendId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -170,12 +156,10 @@ public class UserService {
 
         log.info("Friend с id {} добавлен пользователю: {}", friendId, user);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(user);
+        return user;
     }
 
-    public ResponseEntity<User> removeFriends(int userId, int friendId) throws ResponseStatusException {
+    public User removeFriends(int userId, int friendId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -192,12 +176,10 @@ public class UserService {
 
         log.info("Friend с id {} удален от пользователя: {}", friendId, user);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(user);
+        return user;
     }
 
-    public ResponseEntity<Collection<User>> getFriends(int userId) throws ResponseStatusException {
+    public Collection<User> getFriends(int userId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -206,13 +188,11 @@ public class UserService {
         try {
             checkFriendsByUser(user);
 
-        } catch (ResponseStatusException e) {
+        } catch (ConflictException e) {
 
             log.info(e.getMessage());
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(allFriends);
+            return allFriends;
         }
 
         allFriends = user
@@ -222,7 +202,9 @@ public class UserService {
                     User friend;
                     try {
                         friend = userStorage.getUserById(id);
-                    } catch (ResponseStatusException e) {
+
+                    } catch (NotFoundException e) {
+
                         return null;
                     }
                     return friend;
@@ -231,12 +213,10 @@ public class UserService {
 
         log.info("Текущее количество друзей пользователя с id=>{}; =>{}", userId, allFriends.size());
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(allFriends);
+        return allFriends;
     }
 
-    public ResponseEntity<Collection<User>> getCommonFriends(int userId, int friendId) throws ResponseStatusException {
+    public Collection<User> getCommonFriends(int userId, int friendId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -248,13 +228,11 @@ public class UserService {
             checkFriendsByUser(user);
             checkFriendsByUser(friend);
 
-        } catch (ResponseStatusException e) {
+        } catch (ConflictException e) {
 
             log.info(e.getMessage());
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(commonFriends);
+            return commonFriends;
         }
 
         commonFriends = user
@@ -264,8 +242,11 @@ public class UserService {
                 .map(id -> {
                     User commonFriend;
                     try {
+
                         commonFriend = userStorage.getUserById(id);
-                    } catch (ResponseStatusException e) {
+
+                    } catch (NotFoundException e) {
+
                         return null;
                     }
                     return commonFriend;
@@ -275,11 +256,8 @@ public class UserService {
         log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} => {}"
                 , userId, friendId, commonFriends.size());
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(commonFriends);
+        return commonFriends;
     }
-
 
 
     private void checkUserFriendById(User user, int friendId, boolean param) {
@@ -290,8 +268,8 @@ public class UserService {
 
                 log.error("У пользователя с id=>{} уже существует друг id=>{}", user.getId(), friendId);
 
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "У пользователя с id=>" + user.getId() + " уже существует друг id=>" + friendId);
+                throw new ConflictException("У пользователя с id=>" + user.getId()
+                        + " уже существует друг id=>" + friendId);
             }
 
         } else {
@@ -300,8 +278,8 @@ public class UserService {
 
                 log.error("У пользователя с id=>{} не существует друга id=>{}", user.getId(), friendId);
 
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "У пользователя с id=>" + user.getId() + " не существует друга id=>" + friendId);
+                throw new NotFoundException("У пользователя с id=>" + user.getId()
+                        + " не существует друга c id=>" + friendId);
             }
         }
     }
@@ -312,8 +290,7 @@ public class UserService {
 
             log.error("У пользователя с id=>{} еще нет друзей", user.getId());
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "У пользователя с id=>" + user.getId() + " еще нет друзей");
+            throw new ConflictException("У пользователя с id=>" + user.getId() + " еще нет друзей");
         }
     }
 
@@ -323,8 +300,7 @@ public class UserService {
 
             log.error("Такой пользователь c id=>{} не существует", userId);
 
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой пользователь c id=>" + userId + " не существует");
+            throw new NotFoundException("Такой пользователь c id=>" + userId + " не существует");
         }
     }
 
@@ -337,10 +313,8 @@ public class UserService {
             log.error("Такой пользователь с login: {} уже существует, по id=>{}," +
                     " для обновления используй PUT запрос", newUserLogin, existentId);
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой пользователь с login:"
-                            + newUserLogin
-                            + " уже существует, для обновления используй PUT запрос");
+            throw new ConflictException("Такой пользователь с login: " + newUserLogin
+                    + " уже существует, для обновления используй PUT запрос");
         }
     }
 
@@ -353,12 +327,8 @@ public class UserService {
             log.error("Такой пользователь с email: {} уже существует, по id=>{}," +
                     " для обновления используй PUT запрос", newUserEmail, existentId);
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой пользователь с email:"
-                            + newUserEmail
-                            + " уже существует, по id=> "
-                            + existentId
-                            + " для обновления используй PUT запрос");
+            throw new ConflictException("Такой пользователь с email:" + newUserEmail
+                    + " уже существует, по id=> " + existentId + " для обновления используй PUT запрос");
         }
     }
 
@@ -370,10 +340,8 @@ public class UserService {
 
             log.error("Такой пользователь с login: {} уже существует, по id=>{}", updateUserLogin, existentId);
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой пользователь с login: "
-                            + updateUserLogin
-                            + " уже существует, по id=>" + existentId);
+            throw new ConflictException("Такой пользователь с login: "
+                    + updateUserLogin + " уже существует, по id=>" + existentId);
         }
 
     }
@@ -386,10 +354,8 @@ public class UserService {
 
             log.error("Такой пользователь с email: {} уже существует, по id=>{}", updateUserEmail, existentId);
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой пользователь с email:"
-                            + updateUserEmail
-                            + " уже существует, по id=>" + existentId);
+            throw new ConflictException("Такой пользователь с email: " + updateUserEmail
+                    + " уже существует, по id=>" + existentId);
         }
     }
 

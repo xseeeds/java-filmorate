@@ -2,10 +2,10 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.BadRequestException;
+import ru.yandex.practicum.filmorate.exception.ConflictException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
@@ -28,14 +28,13 @@ public class FilmService {
     }
 
 
-    public ResponseEntity<Film> addFilm(Film film) throws ResponseStatusException {
+    public Film addFilm(Film film) throws ConflictException, BadRequestException {
 
         if (film.getId() != 0) {
 
             log.error("POST request. Для обновления используй PUT запрос, film имеет id => {}", film);
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "POST request. Для обновления используй PUT запрос, film имеет id!!! =>" + film);
+            throw new BadRequestException("POST request. Для обновления используй PUT запрос, film имеет id!!! => " + film);
         }
 
         checkFilm(film);
@@ -45,30 +44,25 @@ public class FilmService {
 
         log.info("Фильм добавлен =>{}", film);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(film);
+        return film;
     }
 
-    public ResponseEntity<Film> getFilmById(int filmId) throws ResponseStatusException {
+    public Film getFilmById(int filmId) throws NotFoundException {
 
         final Film film = filmStorage.getFilmById(filmId);
 
         log.info("Фильм получен c id=>{} =>>>{}", filmId, film);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(film);
+        return film;
     }
 
-    public ResponseEntity<Film> updateFilm(Film film) throws ResponseStatusException {
+    public Film updateFilm(Film film) throws NotFoundException, ConflictException, BadRequestException {
 
         if (film.getId() == 0) {
 
             log.error("PUT request. Для обновления используй id в теле запроса film => {}", film);
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PUT request. Для обновления используй id в теле запроса film => " + film);
+            throw new BadRequestException("PUT request. Для обновления используй id в теле запроса film => " + film);
         }
 
         checkFilmById(film.getId());
@@ -79,46 +73,38 @@ public class FilmService {
 
         filmStorage.updateFilm(film);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(film);
+        return film;
     }
 
-    public ResponseEntity<Collection<Film>> getAllFilm() {
+    public Collection<Film> getAllFilm() {
 
         final Collection<Film> allFilm = filmStorage.getAllFilm();
 
         log.info("Фильм получены (кол-во) =>{}", allFilm.size());
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(allFilm);
+        return allFilm;
     }
 
-    public ResponseEntity<Film> removeFilmById(int filmId) throws ResponseStatusException {
+    public Film removeFilmById(int filmId) throws NotFoundException {
 
         final Film film = filmStorage.removeFilmById(filmId);
 
         log.info("Фильм удален c id=>{} ===>{}", filmId, film);
 
-        return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body(film);
+        return film;
     }
 
-    public ResponseEntity<String> removeAllFilm() {
+    public String removeAllFilm() {
 
         filmStorage.removeAllFilm();
         resetGlobalId();
 
         log.info("Все фильмы удалены, id сброшен");
 
-        return ResponseEntity
-                .status(HttpStatus.RESET_CONTENT)
-                .body("205 (RESET_CONTENT) Все фильмы удалены. id сброшен");
+        return "205 (RESET_CONTENT) Все фильмы удалены. id сброшен";
     }
 
-    public ResponseEntity<Film> addUserLikeByFilmId(int filmId, int userId) throws ResponseStatusException {
+    public Film addUserLikeByFilmId(int filmId, int userId) throws ConflictException, NotFoundException {
 
         final Film film = filmStorage.getFilmById(filmId);
 
@@ -132,12 +118,10 @@ public class FilmService {
 
         log.info("Пользователем c id=>{} добавлен лайк фильму c id=>{}", userId, filmId);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(film);
+        return film;
     }
 
-    public ResponseEntity<Film> removeUserLikeByFilmId(int filmId, int userId) {
+    public Film removeUserLikeByFilmId(int filmId, int userId) throws ConflictException, NotFoundException {
 
         final Film film = filmStorage.getFilmById(filmId);
 
@@ -151,12 +135,10 @@ public class FilmService {
 
         log.info("Пользователем c id=>{} удален лайк у фильма c id=>{}", userId, filmId);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(film);
+        return film;
     }
 
-    public ResponseEntity<Collection<Film>> getFilmByPopular(int count) {
+    public Collection<Film> getFilmByPopular(int count) {
 
         final Collection<Film> filmByPopular = filmStorage
                 .getAllFilm()
@@ -167,12 +149,10 @@ public class FilmService {
 
         log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(filmByPopular);
+        return filmByPopular;
     }
 
-    private void checkFilmLikeByUserId (Film film, int userId, boolean param) {
+    private void checkFilmLikeByUserId(Film film, int userId, boolean param) {
 
         if (param) {
 
@@ -180,8 +160,8 @@ public class FilmService {
 
                 log.error("У фильма с id=>{} уже существует лайк пользователя с id=>{}", film.getId(), userId);
 
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "У фильма с id=>" + film.getId() + " уже существует лайк пользователя с id=>" + userId);
+                throw new ConflictException("У фильма с id=>" + film.getId()
+                        + " уже существует лайк пользователя с id=>" + userId);
             }
 
         } else {
@@ -190,8 +170,8 @@ public class FilmService {
 
                 log.error("У фильма с id=>{} не существует лайка пользователя с id=>{}", film.getId(), userId);
 
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "У фильма с id=>" + film.getId() + " не существует лайка пользователя с id=>" + userId);
+                throw new NotFoundException("У фильма с id=>" + film.getId()
+                        + " не существует лайка пользователя с id=>" + userId);
             }
         }
     }
@@ -204,10 +184,8 @@ public class FilmService {
 
             log.error("Такой фильм: {} уже существует по id {}", film, existentFilm.getId());
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой фильм: "
-                            + film
-                            + " уже существует, по id: " + existentFilm.getId());
+            throw new ConflictException("Такой фильм: " + film
+                    + " уже существует, по id: " + existentFilm.getId());
         }
     }
 
@@ -220,10 +198,9 @@ public class FilmService {
             log.error("Такой фильм: {} уже существует, по id=>{}," +
                     " для обновления используй PUT запрос", film, film.getId());
 
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Такой фильм: " + film
-                            + " уже существует, по id=>" + film.getId()
-                            + " для обновления используй PUT запрос");
+            throw new ConflictException("Такой фильм: " + film
+                    + " уже существует, по id=>" + film.getId()
+                    + " для обновления используй PUT запрос");
         }
     }
 
@@ -235,10 +212,7 @@ public class FilmService {
 
             log.error("Такой фильм с id: {} не существует", filmId);
 
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой фильм с id: "
-                            + filmId
-                            + " не существует");
+            throw new NotFoundException("Такой фильм с id: " + filmId + " не существует");
         }
     }
 

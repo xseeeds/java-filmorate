@@ -1,9 +1,8 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
@@ -30,8 +29,7 @@ public class InMemoryUser implements UserStorage {
         final User user = users.get(userId);
         if (user == null) {
             log.error("Такой пользователь с id: {} не существует", userId);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой пользователь c id=>" + userId + " не существует");
+            throw new NotFoundException("Такой пользователь c id=>" + userId + " не существует");
         }
         return user;
     }
@@ -57,8 +55,7 @@ public class InMemoryUser implements UserStorage {
             return user;
         }
         log.error("Такой пользователь с id: {} не существует", userId);
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Такой user c id=>" + userId + " не существует");
+        throw new NotFoundException("Такой user c id=>" + userId + " не существует");
     }
 
     @Override

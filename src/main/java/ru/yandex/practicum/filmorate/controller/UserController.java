@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import ru.yandex.practicum.filmorate.model.Response;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -24,55 +26,66 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> addUser(@Valid @RequestBody User user) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public User addUser(@Valid @RequestBody User user) {
         return userService.addUser(user);
     }
 
     @PutMapping
-    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) {
+    @ResponseStatus(HttpStatus.OK)
+    public User updateUser(@Valid @RequestBody User user) {
         return userService.updateUser(user);
     }
 
     @GetMapping
-    public ResponseEntity<Collection<User>> allUser() {
+    @ResponseStatus(HttpStatus.OK)
+    public Collection<User> allUser() {
         return userService.getAllUser();
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable @Positive int userId) {
+    @ResponseStatus(HttpStatus.OK)
+    public User getUserById(@PathVariable @Positive int userId) {
         return userService.getUserById(userId);
     }
 
-    @PutMapping("/{userId}/friends/{friendId}")
-    public ResponseEntity<User> addFriends(@PathVariable @Positive int userId,
-                                           @PathVariable @Positive int friendId) {
-        return userService.addFriends(userId, friendId);
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.RESET_CONTENT)
+    public Response removeAllUser() {
+        return new Response(userService.removeAllUser());
+        //Не понимаю почему здесь не приходит ответ с сервера(
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<User> removeUserById(@PathVariable @Positive int userId) {
+    @ResponseStatus(HttpStatus.RESET_CONTENT)
+    public User removeUserById(@PathVariable @Positive int userId) {
         return userService.removeUserById(userId);
     }
 
-    @DeleteMapping
-    public ResponseEntity<String> removeAllUser() {
-        return userService.removeAllUser();
+    @PutMapping("/{userId}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.OK)
+    public User addFriends(@PathVariable @Positive int userId,
+                           @PathVariable @Positive int friendId) {
+        return userService.addFriends(userId, friendId);
     }
 
     @DeleteMapping("/{userId}/friends/{friendId}")
-    public ResponseEntity<User> removeFriends(@PathVariable @Positive int userId,
-                                              @PathVariable @Positive int friendId) {
+    @ResponseStatus(HttpStatus.OK)
+    public User removeFriends(@PathVariable @Positive int userId,
+                              @PathVariable @Positive int friendId) {
         return userService.removeFriends(userId, friendId);
     }
 
     @GetMapping("/{userId}/friends")
-    public ResponseEntity<Collection<User>> getFriends(@PathVariable @Positive int userId) {
+    @ResponseStatus(HttpStatus.OK)
+    public Collection<User> getFriends(@PathVariable @Positive int userId) {
         return userService.getFriends(userId);
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
-    public ResponseEntity<Collection<User>> getCommonFriends(@PathVariable @Positive int userId,
-                                                             @PathVariable @Positive int otherId) {
+    @ResponseStatus(HttpStatus.OK)
+    public Collection<User> getCommonFriends(@PathVariable @Positive int userId,
+                                             @PathVariable @Positive int otherId) {
         return userService.getCommonFriends(userId, otherId);
     }
 }

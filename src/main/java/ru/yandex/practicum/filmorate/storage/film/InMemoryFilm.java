@@ -1,9 +1,8 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
@@ -40,10 +39,7 @@ public class InMemoryFilm implements FilmStorage {
 
         if (film.isEmpty()) {
             log.error("Такой фильм с id: {} не существует", filmId);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой фильм с id: "
-                            + filmId
-                            + " не существует");
+            throw new NotFoundException("Такой фильм с id: " + filmId + " не существует");
         }
         return film.get();
     }
@@ -73,10 +69,7 @@ public class InMemoryFilm implements FilmStorage {
                 .findFirst();
         if (film.isEmpty()) {
             log.error("Такой фильм с id: {} не существует", filmId);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Такой фильм с id: "
-                            + filmId
-                            + " не существует");
+            throw new NotFoundException("Такой фильм с id: " + filmId + " не существует");
         }
         films.remove(film.get());
         idsFilms.remove(filmId);
