@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RestControllerAdvice("ru.yandex.practicum.filmorate.controller")
 public class ErrorHandler {
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(ConstraintViolationException.class)
     public ValidationErrorResponse onConstraintValidationException(
             ConstraintViolationException e
