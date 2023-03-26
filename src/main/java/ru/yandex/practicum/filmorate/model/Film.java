@@ -39,5 +39,5 @@ public class Film {
     private float rate;
 
     //TODO TreeMap<Integer, Integer> likes; userId/rate
-    Set<Integer> likes = new HashSet<>();
+    final Set<Integer> likes = new HashSet<>();
 }

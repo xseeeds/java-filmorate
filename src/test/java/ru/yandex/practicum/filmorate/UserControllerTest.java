@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+//@WebMvcTest
 public class UserControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
@@ -506,10 +508,12 @@ public class UserControllerTest {
 
 
         mockMvc.perform(delete("/users/4"))
-                .andExpect(status().isNotFound());
+                .andExpect(status()
+                        .isNotFound());
 
         mockMvc.perform(delete("/users/3"))
-                .andExpect(status().isResetContent());
+                .andExpect(status()
+                        .isResetContent());
 
         mockMvc.perform(get("/users/1"))
                 .andExpect(jsonPath("$.friendsIds")

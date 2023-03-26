@@ -2,7 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import ru.yandex.practicum.filmorate.exception.NoParameterException;
+import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -10,11 +10,11 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import java.util.Collection;
-import java.util.Optional;
 
 
 @RestController
 @RequestMapping("/users")
+@Validated
 public class UserController {
     UserService userService;
 
@@ -39,34 +39,19 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable @Valid @Positive Optional<Integer> userId) {
-
-        if (userId.orElseThrow(() -> new NoParameterException("userId")) <= 0) {
-            throw new NoParameterException("userId");
-        }
-        return userService.getUserById(userId.get());
+    public ResponseEntity<User> getUserById(@PathVariable @Positive int userId) {
+        return userService.getUserById(userId);
     }
 
     @PutMapping("/{userId}/friends/{friendId}")
-    public ResponseEntity<User> addFriends(@PathVariable @Valid @Positive Optional<Integer> userId,
-                                           @PathVariable @Valid @Positive Optional<Integer> friendId) {
-
-        if (userId.orElseThrow(() -> new NoParameterException("userId")) <= 0) {
-            throw new NoParameterException("userId");
-        }
-        if (friendId.orElseThrow(() -> new NoParameterException("friendId")) <= 0) {
-            throw new NoParameterException("friendId");
-        }
-        return userService.addFriends(userId.get(), friendId.get());
+    public ResponseEntity<User> addFriends(@PathVariable @Positive int userId,
+                                           @PathVariable @Positive int friendId) {
+        return userService.addFriends(userId, friendId);
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<User> removeUserById(@PathVariable @Valid @Positive Optional<Integer> userId) {
-
-        if (userId.orElseThrow(() -> new NoParameterException("userId")) <= 0) {
-            throw new NoParameterException("userId");
-        }
-        return userService.removeUserById(userId.get());
+    public ResponseEntity<User> removeUserById(@PathVariable @Positive int userId) {
+        return userService.removeUserById(userId);
     }
 
     @DeleteMapping
@@ -75,37 +60,19 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}/friends/{friendId}")
-    public ResponseEntity<User> removeFriends(@PathVariable @Valid @Positive Optional<Integer> userId,
-                                              @PathVariable @Valid @Positive Optional<Integer> friendId) {
-
-        if (userId.orElseThrow(() -> new NoParameterException("userId")) <= 0) {
-            throw new NoParameterException("userId");
-        }
-        if (friendId.orElseThrow(() -> new NoParameterException("friendId")) <= 0) {
-            throw new NoParameterException("friendId");
-        }
-        return userService.removeFriends(userId.get(), friendId.get());
+    public ResponseEntity<User> removeFriends(@PathVariable @Positive int userId,
+                                              @PathVariable @Positive int friendId) {
+        return userService.removeFriends(userId, friendId);
     }
 
     @GetMapping("/{userId}/friends")
-    public ResponseEntity<Collection<User>> getFriends(@PathVariable @Valid @Positive Optional<Integer> userId) {
-
-        if (userId.orElseThrow(() -> new NoParameterException("userId")) <= 0) {
-            throw new NoParameterException("userId");
-        }
-        return userService.getFriends(userId.get());
+    public ResponseEntity<Collection<User>> getFriends(@PathVariable @Positive int userId) {
+        return userService.getFriends(userId);
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
-    public ResponseEntity<Collection<User>> getCommonFriends(@PathVariable @Valid @Positive Optional<Integer> userId,
-                                                             @PathVariable @Valid @Positive Optional<Integer> otherId) {
-
-        if (userId.orElseThrow(() -> new NoParameterException("userId")) <= 0) {
-            throw new NoParameterException("userId");
-        }
-        if (otherId.orElseThrow(() -> new NoParameterException("otherId")) <= 0) {
-            throw new NoParameterException("otherId");
-        }
-        return userService.getCommonFriends(userId.get(), otherId.get());
+    public ResponseEntity<Collection<User>> getCommonFriends(@PathVariable @Positive int userId,
+                                                             @PathVariable @Positive int otherId) {
+        return userService.getCommonFriends(userId, otherId);
     }
 }

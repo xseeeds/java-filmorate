@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import nonapi.io.github.classgraph.json.Id;
 
 import javax.validation.constraints.*;
@@ -11,6 +12,7 @@ import java.util.Set;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class User {
 
     @Id
@@ -28,5 +30,6 @@ public class User {
     @Past
     LocalDate birthday;
 
+    @Builder.Default
     Set<Integer> friendsIds = new HashSet<>();
 }

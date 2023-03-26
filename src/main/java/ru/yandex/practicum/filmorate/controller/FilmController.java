@@ -2,7 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import ru.yandex.practicum.filmorate.exception.NoParameterException;
+import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -14,6 +14,7 @@ import java.util.Collection;
 
 @RestController
 @RequestMapping("/films")
+@Validated
 public class FilmController {
     FilmService filmService;
 
@@ -33,14 +34,7 @@ public class FilmController {
     }
 
     @GetMapping("/{filmId}")
-    public ResponseEntity<Film> getFilmById(@PathVariable @Valid @Positive Integer filmId) {
-
-        if (filmId == null) {
-            throw new NoParameterException("filmId");
-        }
-        if (filmId <= 0) {
-            throw new NoParameterException("filmId");
-        }
+    public ResponseEntity<Film> getFilmById(@PathVariable @Positive int filmId) {
         return filmService.getFilmById(filmId);
     }
 
@@ -55,51 +49,26 @@ public class FilmController {
     }
 
     @DeleteMapping("/{filmId}")
-    public ResponseEntity<Film> removeFilmById(@PathVariable @Valid @Positive Integer filmId) {
-
-        if (filmId == null) {
-            throw new NoParameterException("filmId");
-        }
-        if (filmId <= 0) {
-            throw new NoParameterException("filmId");
-        }
+    public ResponseEntity<Film> removeFilmById(@PathVariable @Positive int filmId) {
         return filmService.removeFilmById(filmId);
     }
 
     @PutMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Film> addUserLikeByFilmId(@PathVariable @Valid @Positive Integer filmId,
-                                                    @PathVariable @Valid @Positive Integer userId) {
-
-        if (filmId <= 0) {
-            throw new NoParameterException("filmId");
-        }
-        if (userId <= 0) {
-            throw new NoParameterException("userId");
-        }
+    public ResponseEntity<Film> addUserLikeByFilmId(@PathVariable @Positive int filmId,
+                                                    @PathVariable @Positive int userId) {
         return filmService.addUserLikeByFilmId(filmId, userId);
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Film> removeUserLikeByFilmId(@PathVariable @Valid @Positive Integer filmId,
-                                                       @PathVariable @Valid @Positive Integer userId) {
-
-        if (filmId <= 0) {
-            throw new NoParameterException("filmId");
-        }
-        if (userId <= 0) {
-            throw new NoParameterException("userId");
-        }
+    public ResponseEntity<Film> removeUserLikeByFilmId(@PathVariable @Positive int filmId,
+                                                       @PathVariable @Positive int userId) {
         return filmService.removeUserLikeByFilmId(filmId, userId);
     }
 
     @GetMapping("/popular")
     public ResponseEntity<Collection<Film>> getFilmByPopular(
             @RequestParam                                                           //?count={count}
-                    (value = "count", defaultValue = "10", required = false) Integer count) {
-
-        if (count <= 0) {
-            throw new NoParameterException("count");
-        }
+                    (value = "count", defaultValue = "10", required = false) @Positive int count) {
         return filmService.getFilmByPopular(count);
     }
 }
