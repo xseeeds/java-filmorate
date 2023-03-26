@@ -20,7 +20,7 @@ public class ErrorHandler {
     public ValidationErrorResponse onConstraintValidationException(
             ConstraintViolationException e
     ) {
-        final List<Violation> violations = e.getConstraintViolations()
+        final List<Violation> errorPathVariable = e.getConstraintViolations()
                 .stream()
                 .map(
                         violation -> new Violation(
@@ -29,7 +29,7 @@ public class ErrorHandler {
                         )
                 )
                 .collect(Collectors.toList());
-        return new ValidationErrorResponse(violations);
+        return new ValidationErrorResponse(errorPathVariable);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -37,7 +37,7 @@ public class ErrorHandler {
     public ValidationErrorResponse onMethodArgumentNotValidException(
             MethodArgumentNotValidException e
     ) {
-        final List<Violation> violations = e.getBindingResult()
+        final List<Violation> errorRequestBody = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(
@@ -47,6 +47,6 @@ public class ErrorHandler {
                         )
                 )
                 .collect(Collectors.toList());
-        return new ValidationErrorResponse(violations);
+        return new ValidationErrorResponse(errorRequestBody);
     }
 }
