@@ -1,14 +1,14 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.yandex.practicum.filmorate.exception.BadRequestException;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Response;
+import ru.yandex.practicum.filmorate.model.ErrorResponse;
 import ru.yandex.practicum.filmorate.model.ValidationErrorResponse;
 import ru.yandex.practicum.filmorate.model.Violation;
 
@@ -16,38 +16,35 @@ import javax.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice("ru.yandex.practicum.filmorate.controller")
 public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Response errorNotFoundException(
+    public ErrorResponse errorNotFoundException(
             final NotFoundException e
     ) {
-        return new Response(e.getMessage());
+        log.error(e.getMessage(), e);
+        return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
-    public Response errorConflictException(
+    public ErrorResponse errorConflictException(
             final ConflictException e
     ) {
-        return new Response(e.getMessage());
+        log.error(e.getMessage(), e);
+        return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Response errorBadRequestException(
-            final BadRequestException e
-    ) {
-        return new Response(e.getMessage());
-    }
-
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(ConstraintViolationException.class)
     public ValidationErrorResponse onConstraintValidationException(
             final ConstraintViolationException e
     ) {
+        log.error(e.getMessage(), e);
         final List<Violation> errorPathVariable = e.getConstraintViolations()
                 .stream()
                 .map(
@@ -65,6 +62,7 @@ public class ErrorHandler {
     public ValidationErrorResponse onMethodArgumentNotValidException(
             final MethodArgumentNotValidException e
     ) {
+        log.error(e.getMessage(), e);
         final List<Violation> errorRequestBody = e.getBindingResult()
                 .getFieldErrors()
                 .stream()

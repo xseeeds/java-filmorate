@@ -3,12 +3,15 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.BadRequestException;
+import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Positive;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -16,89 +19,56 @@ import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
+@Validated
 public class UserService {
-    UserStorage userStorage;
+    private final UserStorage userStorage;
+    private final UserStorage.OnCreate userStorageOnCreate;
+    private final UserStorage.OnUpdate userStorageOnUpdate;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(UserStorage userStorage,
+                       UserStorage.OnCreate userStorageOnCreate,
+                       UserStorage.OnUpdate userStorageOnUpdate) {
         this.userStorage = userStorage;
+        this.userStorageOnCreate = userStorageOnCreate;
+        this.userStorageOnUpdate =userStorageOnUpdate;
     }
 
-    private User userBuilder;
-    private Integer globalId = 0;
 
+    @Validated({UserStorage.OnCreate.class, UserStorage.class})
+    public User createUser(@Valid User user) throws ConflictException {
 
-    public User addUser(User user) throws ConflictException, BadRequestException {
-
-        if (user.getId() != 0) {
-
-            log.error("POST request. Для обновления используй PUT запрос, user имеет id!!! => {}", user);
-
+        /*if (user.getId() != 0) {
             throw new BadRequestException("POST request. Для обновления используй PUT запрос, user имеет id!!! => " + user);
-        }
+        }*/
 
         checkUserLogin(user.getLogin());
         checkUserEmail(user.getEmail());
 
-        if (user.getName() == null || user.getName().isBlank()) {
-            userBuilder = user
-                    .toBuilder()
-                    .name(user.getLogin())
-                    .id(getNextId())
-                    .build();
-        }
+        final User createdUser = userStorageOnCreate.createUser(user);
 
-        if (user.getName() != null && !user.getName().isBlank()) {
-            userBuilder = user
-                    .toBuilder()
-                    .id(getNextId())
-                    .build();
-        }
+        log.info("newUser {}", createdUser);
 
-        userStorage.userAddOrUpdate(userBuilder);
-
-        log.info("newUser {}", userBuilder);
-
-        return userBuilder;
+        return createdUser;
     }
 
 
-    public User updateUser(User newUser) throws NotFoundException, ConflictException, BadRequestException {
+    @Validated({UserStorage.OnUpdate.class, UserStorage.class})
+    public User updateUser(@Valid User user) throws NotFoundException, ConflictException {
 
-        if (newUser.getId() == 0) {
+        /*if (user.getId() == 0) {
+            throw new BadRequestException("PUT request. Для обновления используй id!!! в теле запроса => " + user);
+        }*/
 
-            log.error("PUT request. Для обновления используй id!!! в теле запроса newUser => {}", newUser);
+        checkUserById(user.getId());
+        checkUserIdOnLogin(user.getLogin(), user.getId());
+        checkUserIdOnEmail(user.getEmail(), user.getId());
 
-            throw new BadRequestException("PUT request. Для обновления используй id!!! в теле запроса newUser => " + newUser);
-        }
+        final User updatedUser =  userStorageOnUpdate.updateUser(user);
 
-        checkUserById(newUser.getId());
-        checkUserIdOnLogin(newUser.getLogin(), newUser.getId());
-        checkUserIdOnEmail(newUser.getEmail(), newUser.getId());
+        log.info("Пользователь обновлен {}", updatedUser);
 
-        final User oldUser = userStorage.getUserById(newUser.getId());
-
-        userStorage.removeOldIdByEmail(oldUser.getEmail());
-        userStorage.removeOldIdByLogin(oldUser.getLogin());
-
-        if (newUser.getName() == null) {
-            userBuilder = newUser
-                    .toBuilder()
-                    .name(newUser.getLogin())
-                    .build();
-        }
-
-        if (newUser.getName() != null) {
-            userBuilder = newUser
-                    .toBuilder()
-                    .build();
-        }
-
-        userStorage.userAddOrUpdate(userBuilder);
-
-        log.info("Пользователь обновлен {}", userBuilder);
-
-        return userBuilder;
+        return updatedUser;
     }
 
     public Collection<User> getAllUser() {
@@ -110,7 +80,7 @@ public class UserService {
         return allUser;
     }
 
-    public User getUserById(int userId) throws NotFoundException {
+    public User getUserById(@Positive long userId) throws NotFoundException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -122,24 +92,26 @@ public class UserService {
     public String removeAllUser() {
 
         userStorage.removeAllUser();
-        resetGlobalId();
+
+        userStorageOnCreate.resetGlobalId();
+
         log.info("Все пользователи удалены. id сброшен");
 
-        return "205 (RESET_CONTENT) Все пользователи удалены. id сброшен";
+        return "Все пользователи удалены. id сброшен";
     }
 
-    public User removeUserById(int userId) throws NotFoundException {
+    public String removeUserById(@Positive long userId) throws NotFoundException {
 
-        final User user = userStorage.removeUserById(userId);
+        userStorage.removeUserById(userId);
 
         userStorage.getAllUser().forEach(u -> u.getFriendsIds().remove(userId));
 
-        log.info("Пользователь {} удален/удален от всех друзей", user);
+        log.info("Пользователь с id=>{} удален/удален от всех друзей", userId);
 
-        return user;
+        return "Пользователь c id=>" + userId + "удален/удален от всех друзей";
     }
 
-    public User addFriends(int userId, int friendId) throws NotFoundException, ConflictException {
+    public User addFriends(@Positive long userId, @Min(-1) long friendId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -151,15 +123,15 @@ public class UserService {
         user.getFriendsIds().add(friendId);
         friend.getFriendsIds().add(userId);
 
-        userStorage.userAddOrUpdate(user);
-        userStorage.userAddOrUpdate(friend);
+        userStorageOnUpdate.updateUser(user);
+        userStorageOnUpdate.updateUser(friend);
 
-        log.info("Friend с id {} добавлен пользователю: {}", friendId, user);
+        log.info("Friend с id=>{} добавлен пользователю c id=>{}", friendId, user);
 
         return user;
     }
 
-    public User removeFriends(int userId, int friendId) throws NotFoundException, ConflictException {
+    public User removeFriends(@Positive long userId, @Positive long friendId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -171,15 +143,15 @@ public class UserService {
         user.getFriendsIds().remove(friendId);
         friend.getFriendsIds().remove(userId);
 
-        userStorage.userAddOrUpdate(user);
-        userStorage.userAddOrUpdate(friend);
+        userStorageOnUpdate.updateUser(user);
+        userStorageOnUpdate.updateUser(friend);
 
-        log.info("Friend с id {} удален от пользователя: {}", friendId, user);
+        log.info("Friend с id=>{} удален от пользователя c id=>{}", friendId, user);
 
         return user;
     }
 
-    public Collection<User> getFriends(int userId) throws NotFoundException, ConflictException {
+    public Collection<User> getFriends(@Positive long userId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -216,7 +188,7 @@ public class UserService {
         return allFriends;
     }
 
-    public Collection<User> getCommonFriends(int userId, int friendId) throws NotFoundException, ConflictException {
+    public Collection<User> getCommonFriends(@Positive long userId, @Positive long friendId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
@@ -260,14 +232,11 @@ public class UserService {
     }
 
 
-    private void checkUserFriendById(User user, int friendId, boolean param) {
+    private void checkUserFriendById(User user, long friendId, boolean param) {
 
         if (param) {
 
             if (user.getFriendsIds().contains(friendId)) {
-
-                log.error("У пользователя с id=>{} уже существует друг id=>{}", user.getId(), friendId);
-
                 throw new ConflictException("У пользователя с id=>" + user.getId()
                         + " уже существует друг id=>" + friendId);
             }
@@ -275,9 +244,6 @@ public class UserService {
         } else {
 
             if (!user.getFriendsIds().contains(friendId)) {
-
-                log.error("У пользователя с id=>{} не существует друга id=>{}", user.getId(), friendId);
-
                 throw new NotFoundException("У пользователя с id=>" + user.getId()
                         + " не существует друга c id=>" + friendId);
             }
@@ -287,32 +253,22 @@ public class UserService {
     private void checkFriendsByUser(User user) {
 
         if (user.getFriendsIds().isEmpty()) {
-
-            log.error("У пользователя с id=>{} еще нет друзей", user.getId());
-
             throw new ConflictException("У пользователя с id=>" + user.getId() + " еще нет друзей");
         }
     }
 
-    public void checkUserById(int userId) {
+    public void checkUserById(long userId) {
 
         if (userStorage.getUserById(userId) == null) {
-
-            log.error("Такой пользователь c id=>{} не существует", userId);
-
             throw new NotFoundException("Такой пользователь c id=>" + userId + " не существует");
         }
     }
 
     public void checkUserLogin(String newUserLogin) {
 
-        final int existentId = userStorage.getIdOnLogin(newUserLogin);
+        final long existentId = userStorage.getIdOnLogin(newUserLogin);
 
         if (existentId != 0) {
-
-            log.error("Такой пользователь с login: {} уже существует, по id=>{}," +
-                    " для обновления используй PUT запрос", newUserLogin, existentId);
-
             throw new ConflictException("Такой пользователь с login: " + newUserLogin
                     + " уже существует, для обновления используй PUT запрос");
         }
@@ -320,50 +276,32 @@ public class UserService {
 
     public void checkUserEmail(String newUserEmail) {
 
-        final int existentId = userStorage.getIdOnEmail(newUserEmail);
+        final long existentId = userStorage.getIdOnEmail(newUserEmail);
 
         if (existentId != 0) {
-
-            log.error("Такой пользователь с email: {} уже существует, по id=>{}," +
-                    " для обновления используй PUT запрос", newUserEmail, existentId);
-
             throw new ConflictException("Такой пользователь с email:" + newUserEmail
                     + " уже существует, по id=> " + existentId + " для обновления используй PUT запрос");
         }
     }
 
-    public void checkUserIdOnLogin(String updateUserLogin, int updateUserId) {
+    public void checkUserIdOnLogin(String updateUserLogin, long updateUserId) {
 
-        final int existentId = userStorage.getIdOnLogin(updateUserLogin);
+        final long existentId = userStorage.getIdOnLogin(updateUserLogin);
 
         if (existentId != updateUserId & existentId != 0) {
-
-            log.error("Такой пользователь с login: {} уже существует, по id=>{}", updateUserLogin, existentId);
-
             throw new ConflictException("Такой пользователь с login: "
                     + updateUserLogin + " уже существует, по id=>" + existentId);
         }
 
     }
 
-    public void checkUserIdOnEmail(String updateUserEmail, int updateUserId) {
+    public void checkUserIdOnEmail(String updateUserEmail, long updateUserId) {
 
-        final int existentId = userStorage.getIdOnEmail(updateUserEmail);
+        final long existentId = userStorage.getIdOnEmail(updateUserEmail);
 
         if (existentId != updateUserId & existentId != 0) {
-
-            log.error("Такой пользователь с email: {} уже существует, по id=>{}", updateUserEmail, existentId);
-
             throw new ConflictException("Такой пользователь с email: " + updateUserEmail
                     + " уже существует, по id=>" + existentId);
         }
-    }
-
-    private Integer getNextId() {
-        return ++globalId;
-    }
-
-    private void resetGlobalId() {
-        globalId = 0;
     }
 }

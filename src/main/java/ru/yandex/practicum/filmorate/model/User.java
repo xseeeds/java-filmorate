@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.model;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -14,21 +15,23 @@ import java.util.Set;
 @Jacksonized
 public class User {
 
-    @Min(0)
-    int id;
+    @Min(value = 0,groups = UserStorage.class, message = "должно быть больше 0")
+    @Null(groups = UserStorage.OnCreate.class, message = "POST request. Для обновления используй PUT запрос, user имеет id!!!")
+    @NotNull(groups = UserStorage.OnUpdate.class, message = "PUT request. Для обновления используй id!!! в теле запроса newUser")
+    Long id;
 
-    @Email
+    @Email(groups = UserStorage.class)
     String email;
 
-    @NotNull
-    @NotBlank
+    @NotNull(groups = UserStorage.class)
+    @Pattern(regexp = "^\\S+$", message = "не должен быть пустым и содержать пробелы", groups = UserStorage.class)
     String login;
 
     String name;
 
-    @Past
+    @Past(groups = UserStorage.class)
     LocalDate birthday;
 
     @Builder.Default
-    Set<Integer> friendsIds = new HashSet<>();
+    Set<Long> friendsIds = new HashSet<>();
 }

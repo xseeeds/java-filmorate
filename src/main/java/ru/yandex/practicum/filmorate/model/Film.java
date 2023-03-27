@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.hibernate.validator.constraints.Length;
 import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthday;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 
 import javax.validation.constraints.*;
@@ -14,29 +15,31 @@ import java.util.Set;
 @Data
 public class Film {
 
-    @PositiveOrZero
+    @Min(value = 0, groups = FilmStorage.class, message = "должно быть больше 0")
+    @Null(groups = FilmStorage.OnCreate.class, message = "POST request. Для обновления используй PUT запрос, film имеет id!!!")
+    @NotNull(groups = FilmStorage.OnUpdate.class, message = "PUT request. Для обновления используй id в теле запроса film")
     @EqualsAndHashCode.Exclude
-    private int id;
+    private Long id;
 
-    @NotNull
-    @NotBlank
+    @NotNull(groups = FilmStorage.class)
+    @NotBlank(groups = FilmStorage.class)
     private String name;
 
-    @Length(max = 200)
+    @Length(max = 200, groups = FilmStorage.class)
     @EqualsAndHashCode.Exclude
     private String description;
 
-    @FirstFilmBirthday
+    @FirstFilmBirthday(groups = FilmStorage.class)
     private LocalDate releaseDate;
 
-    @Positive
+    @Positive(groups = FilmStorage.class)
     private int duration;
 
-    @Max(10)
-    @PositiveOrZero
+    @Max(value = 10, groups = FilmStorage.class)
+    @PositiveOrZero(groups = FilmStorage.class)
     @EqualsAndHashCode.Exclude
     private float rate;
 
     //TODO TreeMap<Integer, Integer> likes; userId/rate
-    final Set<Integer> likes = new HashSet<>();
+    final Set<Long> likes = new HashSet<>();
 }

@@ -4,21 +4,30 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
 
+
 public interface UserStorage {
 
-    void userAddOrUpdate(User user);
+    interface OnCreate {
+        User createUser(User user);
+        void resetGlobalId();
+    }
 
-    User getUserById(int userId);
+    interface OnUpdate {
+        User updateUser(User user);
+    }
+
+
+    User getUserById(long userId);
 
     Collection<User> getAllUser();
 
     void removeAllUser();
 
-    User removeUserById(int userId);
+    void removeUserById(long userId);
 
-    int getIdOnLogin(String userLogin);
+    long getIdOnLogin(String userLogin);
 
-    int getIdOnEmail(String userEmail);
+    long getIdOnEmail(String userEmail);
 
     void removeOldIdByLogin(String userLogin);
 

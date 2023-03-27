@@ -2,20 +2,16 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.http.ResponseEntity;
 import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.model.Response;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Positive;
 
 import java.util.Collection;
 
 @RestController
 @RequestMapping("/films")
-@Validated
 public class FilmController {
     FilmService filmService;
 
@@ -26,19 +22,19 @@ public class FilmController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Film addFilm(@Valid @RequestBody Film film) {
-        return filmService.addFilm(film);
+    public Film addFilm(@RequestBody Film film) {
+        return filmService.createFilm(film);
     }
 
     @GetMapping("/{filmId}")
     @ResponseStatus(HttpStatus.OK)
-    public Film getFilmById(@PathVariable @Positive int filmId) {
+    public Film getFilmById(@PathVariable long filmId) {
         return filmService.getFilmById(filmId);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public Film updateFilm(@Valid @RequestBody Film film) {
+    public Film updateFilm(@RequestBody Film film) {
         return filmService.updateFilm(film);
     }
 
@@ -49,37 +45,31 @@ public class FilmController {
     }
 
     @DeleteMapping
-    @ResponseStatus(HttpStatus.RESET_CONTENT)
-    public Response removeAllFilm() {
-        return new Response(filmService.removeAllFilm());
-        //Не понимаю почему здесь не приходит ответ с сервера(
+    public ResponseEntity<String> removeAllFilm() {
+        return ResponseEntity.ok(filmService.removeAllFilm());
     }
 
     @DeleteMapping("/{filmId}")
-    @ResponseStatus(HttpStatus.RESET_CONTENT)
-    public Film removeFilmById(@PathVariable @Positive int filmId) {
-        return filmService.removeFilmById(filmId);
+    public ResponseEntity<String> removeFilmById(@PathVariable long filmId) {
+        return ResponseEntity.ok(filmService.removeFilmById(filmId));
     }
 
     @PutMapping("/{filmId}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public Film addUserLikeByFilmId(@PathVariable @Positive int filmId,
-                                    @PathVariable @Positive int userId) {
+    public Film addUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
         return filmService.addUserLikeByFilmId(filmId, userId);
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public Film removeUserLikeByFilmId(@PathVariable @Positive int filmId,
-                                       @PathVariable @Positive int userId) {
+    public Film removeUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
         return filmService.removeUserLikeByFilmId(filmId, userId);
     }
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<Film> getFilmByPopular(
-            @RequestParam                                                           //?count={count}
-                    (value = "count", defaultValue = "10", required = false) @Positive int count) {
+    public Collection<Film> getFilmByPopular(                                   //?count={count}
+            @RequestParam(value = "count", defaultValue = "10", required = false) int count) {
         return filmService.getFilmByPopular(count);
     }
 }

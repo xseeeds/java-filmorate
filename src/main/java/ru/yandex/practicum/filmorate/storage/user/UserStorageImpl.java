@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -9,26 +9,18 @@ import java.util.Collection;
 import java.util.TreeMap;
 
 
+@Primary
 @Component
-@Slf4j
-public class InMemoryUser implements UserStorage {
-    private final TreeMap<Integer, User> users = new TreeMap<>();
-    private final TreeMap<String, Integer> userEmails = new TreeMap<>();
-    private final TreeMap<String, Integer> userLogins = new TreeMap<>();
+public class UserStorageImpl implements UserStorage {
+    protected static final TreeMap<Long, User> users = new TreeMap<>();
+    protected static final TreeMap<String, Long> userEmails = new TreeMap<>();
+    protected static final TreeMap<String, Long> userLogins = new TreeMap<>();
 
 
     @Override
-    public void userAddOrUpdate(User user) {
-        users.put(user.getId(), user);
-        userEmails.put(user.getEmail(), user.getId());
-        userLogins.put(user.getLogin(), user.getId());
-    }
-
-    @Override
-    public User getUserById(int userId) {
+    public User getUserById(long userId) {
         final User user = users.get(userId);
         if (user == null) {
-            log.error("Такой пользователь с id: {} не существует", userId);
             throw new NotFoundException("Такой пользователь c id=>" + userId + " не существует");
         }
         return user;
@@ -47,25 +39,24 @@ public class InMemoryUser implements UserStorage {
     }
 
     @Override
-    public User removeUserById(int userId) {
+    public void removeUserById(long userId) {
         if (users.containsKey(userId)) {
             final User user = users.remove(userId);
             userLogins.remove(user.getLogin());
             userEmails.remove(user.getEmail());
-            return user;
+            return;
         }
-        log.error("Такой пользователь с id: {} не существует", userId);
         throw new NotFoundException("Такой user c id=>" + userId + " не существует");
     }
 
     @Override
-    public int getIdOnLogin(String updateUserLogin) {
-        return userLogins.getOrDefault(updateUserLogin, 0);
+    public long getIdOnLogin(String updateUserLogin) {
+        return userLogins.getOrDefault(updateUserLogin, 0L);
     }
 
     @Override
-    public int getIdOnEmail(String updateUserEmail) {
-        return userEmails.getOrDefault(updateUserEmail, 0);
+    public long getIdOnEmail(String updateUserEmail) {
+        return userEmails.getOrDefault(updateUserEmail, 0L);
     }
 
     @Override

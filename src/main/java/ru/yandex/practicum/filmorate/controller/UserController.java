@@ -3,20 +3,17 @@ package ru.yandex.practicum.filmorate.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import ru.yandex.practicum.filmorate.model.Response;
+import ru.yandex.practicum.filmorate.model.ErrorResponse;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.UserService;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Positive;
+
 import java.util.Collection;
 
 
 @RestController
 @RequestMapping("/users")
-@Validated
 public class UserController {
     UserService userService;
 
@@ -27,13 +24,13 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User addUser(@Valid @RequestBody User user) {
-        return userService.addUser(user);
+    public User addUser(@RequestBody User user) {
+        return userService.createUser(user);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public User updateUser(@Valid @RequestBody User user) {
+    public User updateUser(@RequestBody User user) {
         return userService.updateUser(user);
     }
 
@@ -45,47 +42,41 @@ public class UserController {
 
     @GetMapping("/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public User getUserById(@PathVariable @Positive int userId) {
+    public User getUserById(@PathVariable long userId) {
         return userService.getUserById(userId);
     }
 
     @DeleteMapping
-    @ResponseStatus(HttpStatus.RESET_CONTENT)
-    public Response removeAllUser() {
-        return new Response(userService.removeAllUser());
-        //Не понимаю почему здесь не приходит ответ с сервера(
+    public ResponseEntity<String> removeAllUser() {
+        return ResponseEntity.ok(userService.removeAllUser());
     }
 
     @DeleteMapping("/{userId}")
-    @ResponseStatus(HttpStatus.RESET_CONTENT)
-    public User removeUserById(@PathVariable @Positive int userId) {
-        return userService.removeUserById(userId);
+    public ResponseEntity<String> removeUserById(@PathVariable long userId) {
+        return ResponseEntity.ok(userService.removeUserById(userId));
     }
 
     @PutMapping("/{userId}/friends/{friendId}")
     @ResponseStatus(HttpStatus.OK)
-    public User addFriends(@PathVariable @Positive int userId,
-                           @PathVariable @Positive int friendId) {
+    public User addFriends(@PathVariable long userId, @PathVariable long friendId) {
         return userService.addFriends(userId, friendId);
     }
 
     @DeleteMapping("/{userId}/friends/{friendId}")
     @ResponseStatus(HttpStatus.OK)
-    public User removeFriends(@PathVariable @Positive int userId,
-                              @PathVariable @Positive int friendId) {
+    public User removeFriends(@PathVariable long userId, @PathVariable long friendId) {
         return userService.removeFriends(userId, friendId);
     }
 
     @GetMapping("/{userId}/friends")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<User> getFriends(@PathVariable @Positive int userId) {
+    public Collection<User> getFriends(@PathVariable long userId) {
         return userService.getFriends(userId);
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<User> getCommonFriends(@PathVariable @Positive int userId,
-                                             @PathVariable @Positive int otherId) {
+    public Collection<User> getCommonFriends(@PathVariable long userId, @PathVariable long otherId) {
         return userService.getCommonFriends(userId, otherId);
     }
 }

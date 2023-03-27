@@ -6,20 +6,26 @@ import java.util.Collection;
 
 public interface FilmStorage {
 
-    void addFilm(Film film);
+    interface OnCreate {
+        Film createFilm(Film film);
+        void resetGlobalId();
+    }
+
+    interface OnUpdate {
+        Film updateFilm(Film film);
+    }
 
     Film getFilm(Film film);
 
-    Film getFilmById(int filmId);
+    Film getFilmById(long filmId);
 
-    void updateFilm(Film film);
 
     Collection<Film> getAllFilm();
 
-    Film removeFilmById(int filmId);
+    void removeFilmById(long filmId);
 
     void removeAllFilm();
 
-    Integer getIdExistentFilm(int filmId);
+    Long getIdExistentFilm(long filmId);
 
 }

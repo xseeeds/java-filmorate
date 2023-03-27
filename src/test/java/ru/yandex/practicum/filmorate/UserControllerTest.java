@@ -27,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-//@WebMvcTest
 public class UserControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
@@ -81,7 +80,7 @@ public class UserControllerTest {
 
         mockMvc.perform(delete("/users"))
                 .andExpect(status()
-                        .isResetContent());
+                        .isOk());
 
         response = mockMvc
                 .perform(get("/users"))
@@ -513,7 +512,7 @@ public class UserControllerTest {
 
         mockMvc.perform(delete("/users/3"))
                 .andExpect(status()
-                        .isResetContent());
+                        .isOk());
 
         mockMvc.perform(get("/users/1"))
                 .andExpect(jsonPath("$.friendsIds")
