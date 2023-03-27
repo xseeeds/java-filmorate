@@ -1,13 +1,37 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import org.springframework.http.ResponseEntity;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
 
+
 public interface UserStorage {
-    ResponseEntity<User> addUser(User user);
-    ResponseEntity<User> updateUser(User user);
+
+    interface OnCreate {
+        User createUser(User user);
+
+        void resetGlobalId();
+    }
+
+    interface OnUpdate {
+        User updateUser(User user);
+    }
+
+
+    User getUserById(long userId);
+
     Collection<User> getAllUser();
-    ResponseEntity<String> removeAllUser();
+
+    void removeAllUser();
+
+    void removeUserById(long userId);
+
+    long getIdOnLogin(String userLogin);
+
+    long getIdOnEmail(String userEmail);
+
+    void removeOldIdByLogin(String userLogin);
+
+    void removeOldIdByEmail(String userEmail);
+
 }

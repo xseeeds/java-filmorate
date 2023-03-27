@@ -7,12 +7,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+//import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserManager;
+import ru.yandex.practicum.filmorate.service.UserService;
 
+
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,36 +23,53 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static ru.yandex.practicum.filmorate.storage.Managers.getDefaultUserManager;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UserControllerTest {
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
+    private final UserService userService;
+    private final User user1 = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user1WithId = User.builder().id(1L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user2 = User.builder().login("dolore123").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user2WithId = User.builder().id(2L).login("dolore123").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user3 = User.builder().login("dolore12345").name("Nick Name").email("mail12345@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user3WithId = User.builder().id(3L).login("dolore12345").name("Nick Name").email("mail12345@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userNameNull = User.builder().login("dolore").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userNameIsBlank = User.builder().login("dolore123").name(" ").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userLoginWithWhitespace = User.builder().login("dolore ullamco whitSpaces").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userFailEmail = User.builder().login("dolore").name("Nick Name").email("это-неправильный?эмейл@").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userFailBirthday = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(2446, 8, 20)).build();
+    private final User userExistentLogin = User.builder().login("dolore123").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userExistentEmail = User.builder().login("dolore").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userToUpdate = User.builder().id(1L).login("doloreUpdate").name("est adipisicing").email("mail@yandex.ru").birthday(LocalDate.of(1976, 9, 20)).build();
+    private final User userToUpdateWithoutName = User.builder().id(1L).login("doloreUpdate").email("mail@yandex.ru").birthday(LocalDate.of(1976, 9, 20)).build();
+    private final User userNotFoundId = User.builder().id(9999L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userExistentLoginWithId = User.builder().id(1L).login("dolore123").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userExistentEmailWithId = User.builder().id(2L).login("dolore").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
 
     @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private ObjectMapper objectMapper;
-    private final InMemoryUserManager userManager = getDefaultUserManager();
+    UserControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, UserService userService) {
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
+        this.userService = userService;
+    }
 
     @AfterEach
     void ternDown() {
-        userManager.removeAllUser();
+        userService.removeAllUser();
     }
 
 
     @Test
     @SneakyThrows
     void postAndGetAndDeleteUsersTest() {
+        userService.removeAllUser();
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -74,7 +94,7 @@ public class UserControllerTest {
 
         mockMvc.perform(delete("/users"))
                 .andExpect(status()
-                        .isResetContent());
+                        .isOk());
 
         response = mockMvc
                 .perform(get("/users"))
@@ -89,50 +109,47 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void postUserSetNameTest() {
+    void postUserSetNameTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUserNameNull = objectMapper.writeValueAsString(userNameNull);
+
+        String testUserNameIsBlank = objectMapper.writeValueAsString(userNameIsBlank);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(testUser))
+                        .content(testUserNameNull))
                 .andExpect(status()
                         .isCreated())
                 .andExpect(jsonPath("$.name")
                         .value("dolore"));
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUserNameIsBlank))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(jsonPath("$.name")
+                        .value("dolore123"));
     }
 
     @Test
     @SneakyThrows
-    void postFailUserLoginTest() {
+    void postFailUserLoginWithWhitespaceTest() {
 
-        String failLoginUser = "{\n" +
-                "  \"login\": \"dolore ullamco whitSpaces\",\n" +
-                "  \"email\": \"yandex@mail.ru\",\n" +
-                "  \"birthday\": \"2446-08-20\"\n" +
-                "}";
+        String testUserLoginWithWhitespace = objectMapper.writeValueAsString(userLoginWithWhitespace);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(failLoginUser))
+                        .content(testUserLoginWithWhitespace))
                 .andExpect(status()
                         .isBadRequest());
     }
 
     @Test
     @SneakyThrows
-    public void postFailUserEmailTest() {
+    void postFailUserEmailTest() {
 
-        String failEmailUser = "{\n" +
-                "  \"login\": \"doloreullamco\",\n" +
-                "  \"name\": \"\",\n" +
-                "  \"email\": \"это-неправильный?эмейл@\",\n" +
-                "  \"birthday\": \"1980-08-20\"\n" +
-                "}";
+        String failEmailUser = objectMapper.writeValueAsString(userFailEmail);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -144,14 +161,9 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void postFailUserBirthdayTest() {
+    void postFailUserBirthdayTest() {
 
-        String failBirthdayUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"\",\n" +
-                "  \"email\": \"test@mail.ru\",\n" +
-                "  \"birthday\": \"2446-08-20\"\n" +
-                "}";
+        String failBirthdayUser = objectMapper.writeValueAsString(userFailBirthday);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -162,18 +174,11 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void postBadRequestUserWithIdTest() {
+    void postBadRequestUserWithIdTest() {
 
-        String userWithId =
-                "{\"id\" : 100, " +
-                        "  \"login\": \"doloreullamco\",\n" +
-                        "  \"name\": \"\",\n" +
-                        "  \"email\": \"test@mail.ru\",\n" +
-                        "  \"birthday\": \"1980-08-20\"\n" +
-                        "}";
+        String userWithId = objectMapper.writeValueAsString(user1WithId);
 
-        mockMvc
-                .perform(post("/users")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userWithId))
                 .andExpect(status()
@@ -183,14 +188,10 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void postUserEmailAndLoginConflictTest() {
+    void postUserEmailAndLoginConflictTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -198,15 +199,10 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
 
-        String existentLoginByUser = "{\n" +
-                "  \"login\": \"dolore123\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String existentLoginByUser = objectMapper.writeValueAsString(userExistentLogin);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -215,12 +211,7 @@ public class UserControllerTest {
                         .isConflict());
 
 
-        String existentEmailByUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail123@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String existentEmailByUser = objectMapper.writeValueAsString(userExistentEmail);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -232,14 +223,10 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void putUserTest() {
+    void putUserTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -247,37 +234,27 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
 
-        String userToUpdate = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"id\": 1,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testUserToUpdate = objectMapper.writeValueAsString(userToUpdate);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userToUpdate))
+                        .content(testUserToUpdate))
                 .andExpect(status()
                         .isOk())
                 .andExpect(content()
-                        .json(userToUpdate));
+                        .json(testUserToUpdate));
     }
 
 
     @Test
     @SneakyThrows
-    public void putUserSetNameTest() {
+    void putUserSetNameTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -285,18 +262,13 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
-        String userToUpdate = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"id\": 1,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testUserToUpdateWithoutName = objectMapper.writeValueAsString(userToUpdateWithoutName);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userToUpdate))
+                        .content(testUserToUpdateWithoutName))
                 .andExpect(status()
                         .isOk())
                 .andExpect(jsonPath("$.name")
@@ -306,19 +278,13 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void putFailUserIdNotFound() {
+    void putFailUserIdNotFound() {
 
-        String notFoundIdUser = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"id\": 9999,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testNotFoundIdUser = objectMapper.writeValueAsString(userNotFoundId);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(notFoundIdUser))
+                        .content(testNotFoundIdUser))
                 .andExpect(status()
                         .isNotFound());
     }
@@ -326,19 +292,228 @@ public class UserControllerTest {
 
     @Test
     @SneakyThrows
-    public void putFailUserIdIsEmpty() {
+    void putFailUserIdIsEmpty() {
 
-        String IdIsEmptyUser = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testIdIsEmptyUser = objectMapper.writeValueAsString(user1);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(IdIsEmptyUser))
+                        .content(testIdIsEmptyUser))
                 .andExpect(status()
                         .isBadRequest());
+    }
+
+
+    @Test
+    @SneakyThrows
+    void putUserEmailAndLoginConflictTest() {
+
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser1WithId));
+
+
+        String testUser2 = objectMapper.writeValueAsString(user2);
+        String testUser2WithId = objectMapper.writeValueAsString(user2WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser2))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser2WithId));
+
+
+        String existentLoginByUser = objectMapper.writeValueAsString(userExistentLoginWithId);
+
+        mockMvc.perform(put("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(existentLoginByUser))
+                .andExpect(status()
+                        .isConflict());
+
+
+        String existentEmailByUser = objectMapper.writeValueAsString(userExistentEmailWithId);
+
+        mockMvc.perform(put("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(existentEmailByUser))
+                .andExpect(status()
+                        .isConflict());
+    }
+
+
+    @Test
+    @SneakyThrows
+    void addAndDeleteUserFriendsAndDeleteUserByIdCheckFriendTest() {
+
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser1WithId));
+
+        String testUser2 = objectMapper.writeValueAsString(user2);
+        String testUser2WithId = objectMapper.writeValueAsString(user2WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser2))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser2WithId));
+
+
+        String testUser3 = objectMapper.writeValueAsString(user3);
+        String testUser3WithId = objectMapper.writeValueAsString(user3WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser3))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser3WithId));
+
+
+        mockMvc.perform(put("/users/1/friends/2"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIds[0]")
+                        .value("2"));
+
+        mockMvc.perform(put("/users/1/friends/3"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIds[1]")
+                        .value("3"));
+
+
+        mockMvc.perform(get("/users/2"))
+                .andExpect(jsonPath("$.friendsIds[0]")
+                        .value("1"));
+
+        mockMvc.perform(delete("/users/2/friends/1"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIds")
+                        .isEmpty());
+
+
+        mockMvc.perform(delete("/users/4"))
+                .andExpect(status()
+                        .isNotFound());
+
+        mockMvc.perform(delete("/users/3"))
+                .andExpect(status()
+                        .isOk());
+
+        mockMvc.perform(get("/users/1"))
+                .andExpect(jsonPath("$.friendsIds")
+                        .isEmpty());
+    }
+
+
+    @Test
+    @SneakyThrows
+    void getListFriendsByUserAndGetCommonFriendsAndRepeatedFriendship() {
+
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser1WithId));
+
+        String testUser2 = objectMapper.writeValueAsString(user2);
+        String testUser2WithId = objectMapper.writeValueAsString(user2WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser2))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser2WithId));
+
+
+        String testUser3 = objectMapper.writeValueAsString(user3);
+        String testUser3WithId = objectMapper.writeValueAsString(user3WithId);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(testUser3))
+                .andExpect(status()
+                        .isCreated())
+                .andExpect(content()
+                        .json(testUser3WithId));
+
+
+        mockMvc.perform(put("/users/1/friends/2"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIds[0]")
+                        .value("2"));
+
+        mockMvc.perform(put("/users/1/friends/3"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIds[1]")
+                        .value("3"));
+
+        mockMvc.perform(put("/users/2/friends/3"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIds[1]")
+                        .value("3"));
+
+
+        mockMvc.perform(put("/users/3/friends/2"))
+                .andExpect(status()
+                        .isConflict());
+
+
+        String response = mockMvc.perform(get("/users/1/friends"))
+                .andExpect(status()
+                        .isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        List<User> userList = objectMapper
+                .readValue(response, new TypeReference<>() {
+                });
+        assertEquals(2, userList.size());
+
+
+        response = mockMvc.perform(get("/users/1/friends/common/2"))
+                .andExpect(status()
+                        .isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        userList = objectMapper
+                .readValue(response, new TypeReference<>() {
+                });
+        assertEquals(3, userList.get(0).getId());
     }
 }
