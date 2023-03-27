@@ -9,6 +9,7 @@ public interface UserStorage {
 
     interface OnCreate {
         User createUser(User user);
+
         void resetGlobalId();
     }
 

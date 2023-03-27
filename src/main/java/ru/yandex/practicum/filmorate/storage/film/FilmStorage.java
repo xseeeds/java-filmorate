@@ -8,6 +8,7 @@ public interface FilmStorage {
 
     interface OnCreate {
         Film createFilm(Film film);
+
         void resetGlobalId();
     }
 
@@ -18,7 +19,6 @@ public interface FilmStorage {
     Film getFilm(Film film);
 
     Film getFilmById(long filmId);
-
 
     Collection<Film> getAllFilm();
 
