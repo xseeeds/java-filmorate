@@ -139,7 +139,7 @@ public class FilmService {
 
         film.getLikes().remove(userId);
 
-        final Film updatedFilm =  filmStorageOnUpdate.updateFilm(film);
+        final Film updatedFilm = filmStorageOnUpdate.updateFilm(film);
 
         log.info("Пользователем c id=>{} удален лайк у фильма c id=>{}", userId, filmId);
 

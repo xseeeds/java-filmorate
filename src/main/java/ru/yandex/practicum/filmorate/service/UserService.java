@@ -31,7 +31,7 @@ public class UserService {
                        UserStorage.OnUpdate userStorageOnUpdate) {
         this.userStorage = userStorage;
         this.userStorageOnCreate = userStorageOnCreate;
-        this.userStorageOnUpdate =userStorageOnUpdate;
+        this.userStorageOnUpdate = userStorageOnUpdate;
     }
 
 
@@ -64,7 +64,7 @@ public class UserService {
         checkUserIdOnLogin(user.getLogin(), user.getId());
         checkUserIdOnEmail(user.getEmail(), user.getId());
 
-        final User updatedUser =  userStorageOnUpdate.updateUser(user);
+        final User updatedUser = userStorageOnUpdate.updateUser(user);
 
         log.info("Пользователь обновлен {}", updatedUser);
 

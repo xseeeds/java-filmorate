@@ -7,7 +7,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.util.Optional;
 
 @Component
-public class FilmStorageImplOnUpdateFilm implements FilmStorage.OnUpdate{
+public class FilmStorageImplOnUpdateFilm implements FilmStorage.OnUpdate {
     @Override
     public Film updateFilm(Film film) {
         Optional<Film> oldFilm = FilmStorageImpl.films
