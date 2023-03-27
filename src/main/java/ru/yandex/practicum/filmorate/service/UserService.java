@@ -225,8 +225,8 @@ public class UserService {
                 })
                 .collect(toList());
 
-        log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} => {}"
-                , userId, friendId, commonFriends.size());
+        log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} ===> {}",
+                userId, friendId, commonFriends.size());
 
         return commonFriends;
     }
