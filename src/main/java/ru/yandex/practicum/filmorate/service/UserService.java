@@ -38,10 +38,6 @@ public class UserService {
     @Validated({UserStorage.OnCreate.class, UserStorage.class})
     public User createUser(@Valid User user) throws ConflictException {
 
-        /*if (user.getId() != 0) {
-            throw new BadRequestException("POST request. Для обновления используй PUT запрос, user имеет id!!! => " + user);
-        }*/
-
         checkUserLogin(user.getLogin());
         checkUserEmail(user.getEmail());
 
@@ -55,10 +51,6 @@ public class UserService {
 
     @Validated({UserStorage.OnUpdate.class, UserStorage.class})
     public User updateUser(@Valid User user) throws NotFoundException, ConflictException {
-
-        /*if (user.getId() == 0) {
-            throw new BadRequestException("PUT request. Для обновления используй id!!! в теле запроса => " + user);
-        }*/
 
         checkUserById(user.getId());
         checkUserIdOnLogin(user.getLogin(), user.getId());

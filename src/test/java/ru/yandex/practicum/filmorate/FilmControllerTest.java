@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,8 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,6 +28,24 @@ public class FilmControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
     private final FilmService filmService;
+    private final Film film1 = Film.builder().name("nisi eiusmod").description("adipisicing").releaseDate(LocalDate.of(1967, 3, 25)).duration(100).build();
+    private final Film film1WithId = Film.builder().id(1L).name("nisi eiusmod").description("adipisicing").releaseDate(LocalDate.of(1967, 3, 25)).duration(100).build();
+    private final Film film2 = Film.builder().name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
+    private final Film film2WithId = Film.builder().id(2L).name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
+    private final Film filmWithNotFoundId = Film.builder().id(9999L).name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
+    private final Film emptyNameFilm = Film.builder().name(" ").description("Description").releaseDate(LocalDate.of(1900, 3, 25)).duration(200).build();
+    private final Film longDescriptionFilm = Film.builder().name("Film name").description("Пятеро друзей ( комик-группа «Шарло»), приезжают в город Бризуль. Здесь они хотят разыскать господина Огюста Куглова, который задолжал им деньги, а именно 20 миллионов. о Куглов, который за время «своего отсутствия», стал кандидатом Коломбани.").releaseDate(LocalDate.of(1900, 3, 25)).duration(200).build();
+    private final Film failReleaseDateFilm = Film.builder().name("Name").description("Description").releaseDate(LocalDate.of(1895, 12, 27)).duration(200).build();
+    private final Film boundaryReleaseDateFilm = Film.builder().name("Name").description("Description").releaseDate(LocalDate.of(1895, 12, 28)).duration(200).build();
+    private final Film boundaryReleaseDateFilmWithId = Film.builder().id(1L).name("Name").description("Description").releaseDate(LocalDate.of(1895, 12, 28)).duration(200).build();
+    private final Film zeroDurationFilm = Film.builder().name("Name").description("Descrition").releaseDate(LocalDate.of(1980, 3,25)).duration(0).build();
+    private final Film negativeDurationFilm = Film.builder().name("Name").description("Descrition").releaseDate(LocalDate.of(1980,3,25)).duration(-1).build();
+    private final Film filmToUpdate = Film.builder().id(1L).name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
+    private final Film emptyFilmId = Film.builder().name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
+    private final Film filmDuplicate = Film.builder().id(2L).name("nisi eiusmod").description("adipisicing").releaseDate(LocalDate.of(1967, 3, 25)).duration(100).build();
+    private final User user = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8 ,20)).build();
+    private final User userWithId = User.builder().id(1L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8 ,20)).build();
+
 
     @Autowired
     FilmControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, FilmService filmService) {
@@ -32,6 +53,7 @@ public class FilmControllerTest {
         this.objectMapper = objectMapper;
         this.filmService = filmService;
     }
+
 
     @AfterEach
     void ternDown() {
@@ -43,12 +65,7 @@ public class FilmControllerTest {
     @SneakyThrows
     void postAndGetAndDeleteAllFilmsTest() {
 
-        String testFilm = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+        String testFilm = objectMapper.writeValueAsString(film1);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,19 +104,11 @@ public class FilmControllerTest {
     @SneakyThrows
     void postBadRequestFilmWithIdTest() {
 
-        String filmWithId = "{\n" +
-                "  \"id\": 9999,\n" +
-                "  \"name\": \"Film Updated\",\n" +
-                "  \"releaseDate\": \"1989-04-17\",\n" +
-                "  \"description\": \"New film update decription\",\n" +
-                "  \"duration\": 190,\n" +
-                "  \"rate\": 4\n" +
-                "}";
+        String testFilmWithId = objectMapper.writeValueAsString(filmWithNotFoundId);
 
-        mockMvc
-                .perform(post("/films")
+        mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(filmWithId))
+                        .content(testFilmWithId))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -109,16 +118,11 @@ public class FilmControllerTest {
     @SneakyThrows
     void postFailFilmEmptyName() {
 
-        String emptyNameFilm = "{\n" +
-                "  \"name\": \"\",\n" +
-                "  \"description\": \"Description\",\n" +
-                "  \"releaseDate\": \"1900-03-25\",\n" +
-                "  \"duration\": 200\n" +
-                "}";
+        String testEmptyNameFilm = objectMapper.writeValueAsString(emptyNameFilm);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(emptyNameFilm))
+                        .content(testEmptyNameFilm))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -128,19 +132,11 @@ public class FilmControllerTest {
     @SneakyThrows
     void postFailFilmLongDescription() {
 
-        String longDescriptionFilm = "{\n" +
-                "  \"name\": \"Film name\",\n" +
-                "  \"description\": \"Пятеро друзей ( комик-группа «Шарло»), приезжают в город Бризуль." +
-                " Здесь они хотят разыскать господина Огюста Куглова, который задолжал им деньги," +
-                " а именно 20 миллионов. о Куглов, который за время «своего отсутствия»," +
-                " стал кандидатом Коломбани.\",\n" +
-                "    \"releaseDate\": \"1900-03-25\",\n" +
-                "  \"duration\": 200\n" +
-                "}";
+        String testLongDescriptionFilm = objectMapper.writeValueAsString(longDescriptionFilm);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(longDescriptionFilm))
+                        .content(testLongDescriptionFilm))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -150,25 +146,17 @@ public class FilmControllerTest {
     @SneakyThrows
     void postFailFilmReleaseDate() {
 
-        String failReleaseDateFilm = "{\n" +
-                "  \"name\": \"Name\",\n" +
-                "  \"description\": \"Description\",\n" +
-                "  \"releaseDate\": \"1895-12-27\",\n" +
-                "  \"duration\": 200\n" +
-                "}";
+        String testFailReleaseDateFilm = objectMapper.writeValueAsString(failReleaseDateFilm);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(failReleaseDateFilm))
-                .andExpect(status().isBadRequest());
+                        .content(testFailReleaseDateFilm))
+                .andExpect(status()
+                        .isBadRequest());
 
 
-        String testBoundaryReleaseDateFilm = "{\n" +
-                "  \"name\": \"Name\",\n" +
-                "  \"description\": \"Description\",\n" +
-                "  \"releaseDate\": \"1895-12-28\",\n" +
-                "  \"duration\": 200\n" +
-                "}";
+        String testBoundaryReleaseDateFilm = objectMapper.writeValueAsString(boundaryReleaseDateFilm);
+        String testBoundaryReleaseDateFilmWithId = objectMapper.writeValueAsString(boundaryReleaseDateFilmWithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -176,37 +164,27 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testBoundaryReleaseDateFilm));
+                        .json(testBoundaryReleaseDateFilmWithId));
     }
 
     @Test
     @SneakyThrows
     void postFailFilmNegativeDuration() {
 
-        String zeroDurationFilm = "{\n" +
-                "  \"name\": \"Name\",\n" +
-                "  \"description\": \"Descrition\",\n" +
-                "  \"releaseDate\": \"1980-03-25\",\n" +
-                "  \"duration\": 0\n" +
-                "}";
+        String testZeroDurationFilm = objectMapper.writeValueAsString(zeroDurationFilm);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(zeroDurationFilm))
+                        .content(testZeroDurationFilm))
                 .andExpect(status()
                         .isBadRequest());
 
 
-        String negativeDurationFilm = "{\n" +
-                "  \"name\": \"Name\",\n" +
-                "  \"description\": \"Descrition\",\n" +
-                "  \"releaseDate\": \"1980-03-25\",\n" +
-                "  \"duration\": -1\n" +
-                "}";
+        String testNegativeDurationFilm = objectMapper.writeValueAsString(negativeDurationFilm);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(negativeDurationFilm))
+                        .content(testNegativeDurationFilm))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -216,12 +194,8 @@ public class FilmControllerTest {
     @SneakyThrows
     void postFailFilmDuplicate() {
 
-        String testFilm = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+        String testFilm = objectMapper.writeValueAsString(film1);
+        String testFilm1WithId = objectMapper.writeValueAsString(film1WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -229,19 +203,11 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm));
-
-
-        String twinFilm = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+                        .json(testFilm1WithId));
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(twinFilm))
+                        .content(testFilm))
                 .andExpect(status()
                         .isConflict());
     }
@@ -251,12 +217,8 @@ public class FilmControllerTest {
     @SneakyThrows
     void putFilmTest() {
 
-        String testFilm = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+        String testFilm = objectMapper.writeValueAsString(film1);
+        String testFilm1WithId = objectMapper.writeValueAsString(film1WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -264,25 +226,18 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm));
+                        .json(testFilm1WithId));
 
 
-        String filmToUpdate = "{\n" +
-                "  \"id\": 1,\n" +
-                "  \"name\": \"Film Updated\",\n" +
-                "  \"releaseDate\": \"1989-04-17\",\n" +
-                "  \"description\": \"New film update decription\",\n" +
-                "  \"duration\": 190,\n" +
-                "  \"rate\": 4\n" +
-                "}";
+        String testFilmToUpdate = objectMapper.writeValueAsString(filmToUpdate);
 
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(filmToUpdate))
+                        .content(testFilmToUpdate))
                 .andExpect(status()
                         .isOk())
                 .andExpect(content()
-                        .json(filmToUpdate));
+                        .json(testFilmToUpdate));
     }
 
 
@@ -290,17 +245,11 @@ public class FilmControllerTest {
     @SneakyThrows
     void putFailFilmEmptyId() {
 
-        String emptyFilm = "{\n" +
-                "  \"name\": \"Film Updated\",\n" +
-                "  \"releaseDate\": \"1989-04-17\",\n" +
-                "  \"description\": \"New film update decription\",\n" +
-                "  \"duration\": 190,\n" +
-                "  \"rate\": 4\n" +
-                "}";
+        String testEmptyFilmId = objectMapper.writeValueAsString(emptyFilmId);
 
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(emptyFilm))
+                        .content(testEmptyFilmId))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -310,18 +259,11 @@ public class FilmControllerTest {
     @SneakyThrows
     void putFailFilmIdNotFound() {
 
-        String notFoundIdFilm = "{\n" +
-                "  \"id\": 9999,\n" +
-                "  \"name\": \"Film Updated\",\n" +
-                "  \"releaseDate\": \"1989-04-17\",\n" +
-                "  \"description\": \"New film update decription\",\n" +
-                "  \"duration\": 190,\n" +
-                "  \"rate\": 4\n" +
-                "}";
+        String testNotFoundFilmId = objectMapper.writeValueAsString(filmWithNotFoundId);
 
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(notFoundIdFilm))
+                        .content(testNotFoundFilmId))
                 .andExpect(status()
                         .isNotFound());
     }
@@ -330,12 +272,8 @@ public class FilmControllerTest {
     @SneakyThrows
     void putFailFilmDuplicate() {
 
-        String testFilm1 = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+        String testFilm1 = objectMapper.writeValueAsString(film1);
+        String testFilm1WithId = objectMapper.writeValueAsString(film1WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -343,15 +281,10 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm1));
+                        .json(testFilm1WithId));
 
-        String testFilm2 = "{\n" +
-                "  \"name\": \"Film Updated\",\n" +
-                "  \"releaseDate\": \"1989-04-17\",\n" +
-                "  \"description\": \"New film update decription\",\n" +
-                "  \"duration\": 190,\n" +
-                "  \"rate\": 4\n" +
-                "}";
+        String testFilm2 = objectMapper.writeValueAsString(film2);
+        String testFilm2WithId = objectMapper.writeValueAsString(film2WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -359,20 +292,14 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm2));
+                        .json(testFilm2WithId));
 
 
-        String filmDuplicate =
-                "{\"id\" : 2, " +
-                        "  \"name\": \"nisi eiusmod\",\n" +
-                        "  \"description\": \"adipisicing\",\n" +
-                        "  \"releaseDate\": \"1967-03-25\",\n" +
-                        "  \"duration\": 100\n" +
-                        "}";
+        String testFilmDuplicate = objectMapper.writeValueAsString(filmDuplicate);
 
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(filmDuplicate))
+                        .content(testFilmDuplicate))
                 .andExpect(status()
                         .isConflict());
     }
@@ -382,12 +309,8 @@ public class FilmControllerTest {
     @SneakyThrows
     void addAndDeleteUserLikeOnFilmAndGetPopularListAndRepeatedLike() {
 
-        String testFilm1 = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+        String testFilm1 = objectMapper.writeValueAsString(film1);
+        String testFilm1WithId = objectMapper.writeValueAsString(film1WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -395,15 +318,10 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm1));
+                        .json(testFilm1WithId));
 
-        String testFilm2 = "{\n" +
-                "  \"name\": \"Film Updated\",\n" +
-                "  \"releaseDate\": \"1989-04-17\",\n" +
-                "  \"description\": \"New film update decription\",\n" +
-                "  \"duration\": 190,\n" +
-                "  \"rate\": 4\n" +
-                "}";
+        String testFilm2 = objectMapper.writeValueAsString(film2);
+        String testFilm2WithId = objectMapper.writeValueAsString(film2WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -411,15 +329,10 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm2));
+                        .json(testFilm2WithId));
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
-
+        String testUser = objectMapper.writeValueAsString(user);
+        String testUserWithId = objectMapper.writeValueAsString(userWithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -427,7 +340,7 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUserWithId));
 
 
         mockMvc.perform(put("/films/2/like/1"))
@@ -472,12 +385,8 @@ public class FilmControllerTest {
     @SneakyThrows
     void getAndDeleteFilmByIdTest() {
 
-        String testFilm1 = "{\n" +
-                "  \"name\": \"nisi eiusmod\",\n" +
-                "  \"description\": \"adipisicing\",\n" +
-                "  \"releaseDate\": \"1967-03-25\",\n" +
-                "  \"duration\": 100\n" +
-                "}";
+        String testFilm1 = objectMapper.writeValueAsString(film1);
+        String testFilm1WithId = objectMapper.writeValueAsString(film1WithId);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -485,14 +394,14 @@ public class FilmControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testFilm1));
+                        .json(testFilm1WithId));
 
 
         mockMvc.perform(get("/films/1"))
                 .andExpect(status()
                         .isOk())
                 .andExpect(content()
-                        .json(testFilm1));
+                        .json(testFilm1WithId));
 
         mockMvc.perform(delete("/films/2"))
                 .andExpect(status().isNotFound());

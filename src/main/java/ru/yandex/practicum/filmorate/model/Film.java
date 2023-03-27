@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.model;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Length;
 import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthday;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -13,6 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Data
+@Builder
 public class Film {
 
     @Min(value = 0, groups = FilmStorage.class, message = "должно быть больше 0")

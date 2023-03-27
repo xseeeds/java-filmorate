@@ -17,7 +17,7 @@ public class User {
 
     @Min(value = 0,groups = UserStorage.class, message = "должно быть больше 0")
     @Null(groups = UserStorage.OnCreate.class, message = "POST request. Для обновления используй PUT запрос, user имеет id!!!")
-    @NotNull(groups = UserStorage.OnUpdate.class, message = "PUT request. Для обновления используй id!!! в теле запроса newUser")
+    @NotNull(groups = UserStorage.OnUpdate.class, message = "PUT request. Для обновления используй id!!! в теле запроса user")
     Long id;
 
     @Email(groups = UserStorage.class)

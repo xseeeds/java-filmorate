@@ -43,10 +43,6 @@ public class FilmService {
     @Validated({FilmStorage.OnCreate.class, FilmStorage.class})
     public Film createFilm(@Valid Film film) throws ConflictException {
 
-        /*if (film.getId() != 0) {
-            throw new BadRequestException("POST request. Для обновления используй PUT запрос, film имеет id!!! => " + film);
-        }*/
-
         checkFilmByNameReleaseDateDuration(film);
 
         final Film createdFilm = filmStorageOnCreate.createFilm(film);
@@ -58,10 +54,6 @@ public class FilmService {
 
     @Validated({FilmStorage.OnUpdate.class, FilmStorage.class})
     public Film updateFilm(@Valid Film film) throws NotFoundException, ConflictException {
-
-        /*if (film.getId() == 0) {
-            throw new BadRequestException("PUT request. Для обновления используй id в теле запроса film => " + film);
-        }*/
 
         checkFilmById(film.getId());
 

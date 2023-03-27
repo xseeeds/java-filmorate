@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,8 +23,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -31,6 +32,24 @@ public class UserControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
     private final UserService userService;
+    private final User user1 = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user1WithId = User.builder().id(1L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user2 = User.builder().login("dolore123").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user2WithId = User.builder().id(2L).login("dolore123").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user3 = User.builder().login("dolore12345").name("Nick Name").email("mail12345@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User user3WithId = User.builder().id(3L).login("dolore12345").name("Nick Name").email("mail12345@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userNameNull = User.builder().login("dolore").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userNameIsBlank = User.builder().login("dolore123").name(" ").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userLoginWithWhitespace = User.builder().login("dolore ullamco whitSpaces").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userFailEmail = User.builder().login("dolore").name("Nick Name").email("это-неправильный?эмейл@").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userFailBirthday = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(2446, 8, 20)).build();
+    private final User userExistentLogin = User.builder().login("dolore123").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userExistentEmail = User.builder().login("dolore").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userToUpdate = User.builder().id(1L).login("doloreUpdate").name("est adipisicing").email("mail@yandex.ru").birthday(LocalDate.of(1976, 9, 20)).build();
+    private final User userToUpdateWithoutName = User.builder().id(1L).login("doloreUpdate").email("mail@yandex.ru").birthday(LocalDate.of(1976, 9, 20)).build();
+    private final User userNotFoundId = User.builder().id(9999L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userExistentLoginWithId = User.builder().id(1L).login("dolore123").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userExistentEmailWithId = User.builder().id(2L).login("dolore").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
 
     @Autowired
     UserControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, UserService userService) {
@@ -50,12 +69,7 @@ public class UserControllerTest {
     void postAndGetAndDeleteUsersTest() {
         userService.removeAllUser();
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,18 +111,9 @@ public class UserControllerTest {
     @SneakyThrows
     void postUserSetNameTest() {
 
-        String testUserNameNull = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUserNameNull = objectMapper.writeValueAsString(userNameNull);
 
-        String testUserNameIsBlank = "{\n" +
-                "  \"login\": \"dolore1\",\n" +
-                "  \"name\": \" \",\n" +
-                "  \"email\": \"mail1@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUserNameIsBlank = objectMapper.writeValueAsString(userNameIsBlank);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,22 +129,18 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(jsonPath("$.name")
-                        .value("dolore1"));
+                        .value("dolore123"));
     }
 
     @Test
     @SneakyThrows
-    void postFailUserLoginTest() {
+    void postFailUserLoginWithWhitespaceTest() {
 
-        String failLoginUser = "{\n" +
-                "  \"login\": \"dolore ullamco whitSpaces\",\n" +
-                "  \"email\": \"yandex@mail.ru\",\n" +
-                "  \"birthday\": \"2446-08-20\"\n" +
-                "}";
+        String testUserLoginWithWhitespace = objectMapper.writeValueAsString(userLoginWithWhitespace);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(failLoginUser))
+                        .content(testUserLoginWithWhitespace))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -148,12 +149,7 @@ public class UserControllerTest {
     @SneakyThrows
     void postFailUserEmailTest() {
 
-        String failEmailUser = "{\n" +
-                "  \"login\": \"doloreullamco\",\n" +
-                "  \"name\": \"\",\n" +
-                "  \"email\": \"это-неправильный?эмейл@\",\n" +
-                "  \"birthday\": \"1980-08-20\"\n" +
-                "}";
+        String failEmailUser = objectMapper.writeValueAsString(userFailEmail);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -167,12 +163,7 @@ public class UserControllerTest {
     @SneakyThrows
     void postFailUserBirthdayTest() {
 
-        String failBirthdayUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"\",\n" +
-                "  \"email\": \"test@mail.ru\",\n" +
-                "  \"birthday\": \"2446-08-20\"\n" +
-                "}";
+        String failBirthdayUser = objectMapper.writeValueAsString(userFailBirthday);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -185,16 +176,9 @@ public class UserControllerTest {
     @SneakyThrows
     void postBadRequestUserWithIdTest() {
 
-        String userWithId =
-                "{\"id\" : 100, " +
-                        "  \"login\": \"doloreullamco\",\n" +
-                        "  \"name\": \"\",\n" +
-                        "  \"email\": \"test@mail.ru\",\n" +
-                        "  \"birthday\": \"1980-08-20\"\n" +
-                        "}";
+        String userWithId = objectMapper.writeValueAsString(user1WithId);
 
-        mockMvc
-                .perform(post("/users")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userWithId))
                 .andExpect(status()
@@ -206,12 +190,8 @@ public class UserControllerTest {
     @SneakyThrows
     void postUserEmailAndLoginConflictTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser =  objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -219,15 +199,10 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
 
-        String existentLoginByUser = "{\n" +
-                "  \"login\": \"dolore123\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String existentLoginByUser = objectMapper.writeValueAsString(userExistentLogin);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -236,12 +211,7 @@ public class UserControllerTest {
                         .isConflict());
 
 
-        String existentEmailByUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail123@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String existentEmailByUser = objectMapper.writeValueAsString(userExistentEmail);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -255,12 +225,8 @@ public class UserControllerTest {
     @SneakyThrows
     void putUserTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -268,24 +234,18 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
 
-        String userToUpdate = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"id\": 1,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testUserToUpdate = objectMapper.writeValueAsString(userToUpdate);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userToUpdate))
+                        .content(testUserToUpdate))
                 .andExpect(status()
                         .isOk())
                 .andExpect(content()
-                        .json(userToUpdate));
+                        .json(testUserToUpdate));
     }
 
 
@@ -293,12 +253,8 @@ public class UserControllerTest {
     @SneakyThrows
     void putUserSetNameTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -306,18 +262,13 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
-        String userToUpdate = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"id\": 1,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testUserToUpdateWithoutName = objectMapper.writeValueAsString(userToUpdateWithoutName);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userToUpdate))
+                        .content(testUserToUpdateWithoutName))
                 .andExpect(status()
                         .isOk())
                 .andExpect(jsonPath("$.name")
@@ -329,17 +280,11 @@ public class UserControllerTest {
     @SneakyThrows
     void putFailUserIdNotFound() {
 
-        String notFoundIdUser = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"id\": 9999,\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testNotFoundIdUser = objectMapper.writeValueAsString(userNotFoundId);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(notFoundIdUser))
+                        .content(testNotFoundIdUser))
                 .andExpect(status()
                         .isNotFound());
     }
@@ -349,16 +294,11 @@ public class UserControllerTest {
     @SneakyThrows
     void putFailUserIdIsEmpty() {
 
-        String idIsEmptyUser = "{\n" +
-                "  \"login\": \"doloreUpdate\",\n" +
-                "  \"name\": \"est adipisicing\",\n" +
-                "  \"email\": \"mail@yandex.ru\",\n" +
-                "  \"birthday\": \"1976-09-20\"\n" +
-                "}";
+        String testIdIsEmptyUser = objectMapper.writeValueAsString(user1);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(idIsEmptyUser))
+                        .content(testIdIsEmptyUser))
                 .andExpect(status()
                         .isBadRequest());
     }
@@ -368,12 +308,8 @@ public class UserControllerTest {
     @SneakyThrows
     void putUserEmailAndLoginConflictTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -381,15 +317,11 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
 
-        String testUser2 = "{\n" +
-                "  \"login\": \"dolore123\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail123@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser2 = objectMapper.writeValueAsString(user2);
+        String testUser2WithId = objectMapper.writeValueAsString(user2WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -397,16 +329,10 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser2));
+                        .json(testUser2WithId));
 
 
-        String existentLoginByUser = "{\n" +
-                "  \"login\": \"dolore123\",\n" +
-                "  \"name\": \"Nick123 Name123\",\n" +
-                "  \"id\": 1,\n" +
-                "  \"email\": \"mail@ya.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String existentLoginByUser = objectMapper.writeValueAsString(userExistentLoginWithId);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -415,13 +341,7 @@ public class UserControllerTest {
                         .isConflict());
 
 
-        String existentEmailByUser = "{\n" +
-                "  \"login\": \"doloreYa\",\n" +
-                "  \"name\": \"Nick123 Name123\",\n" +
-                "  \"id\": 1,\n" +
-                "  \"email\": \"mail123@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String existentEmailByUser = objectMapper.writeValueAsString(userExistentEmailWithId);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -435,12 +355,8 @@ public class UserControllerTest {
     @SneakyThrows
     void addAndDeleteUserFriendsAndDeleteUserByIdCheckFriendTest() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -448,14 +364,10 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
-        String testUser2 = "{\n" +
-                "  \"login\": \"dolore123\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail123@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser2 = objectMapper.writeValueAsString(user2);
+        String testUser2WithId = objectMapper.writeValueAsString(user2WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -463,15 +375,11 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser2));
+                        .json(testUser2WithId));
 
 
-        String testUser3 = "{\n" +
-                "  \"login\": \"dolore12345\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail12345@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser3 = objectMapper.writeValueAsString(user3);
+        String testUser3WithId = objectMapper.writeValueAsString(user3WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -479,7 +387,7 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser3));
+                        .json(testUser3WithId));
 
 
         mockMvc.perform(put("/users/1/friends/2"))
@@ -524,12 +432,8 @@ public class UserControllerTest {
     @SneakyThrows
     void getListFriendsByUserAndGetCommonFriendsAndRepeatedFriendship() {
 
-        String testUser = "{\n" +
-                "  \"login\": \"dolore\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser = objectMapper.writeValueAsString(user1);
+        String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -537,14 +441,10 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser));
+                        .json(testUser1WithId));
 
-        String testUser2 = "{\n" +
-                "  \"login\": \"dolore123\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail123@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser2 = objectMapper.writeValueAsString(user2);
+        String testUser2WithId = objectMapper.writeValueAsString(user2WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -552,15 +452,11 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser2));
+                        .json(testUser2WithId));
 
 
-        String testUser3 = "{\n" +
-                "  \"login\": \"dolore12345\",\n" +
-                "  \"name\": \"Nick Name\",\n" +
-                "  \"email\": \"mail12345@mail.ru\",\n" +
-                "  \"birthday\": \"1946-08-20\"\n" +
-                "}";
+        String testUser3 = objectMapper.writeValueAsString(user3);
+        String testUser3WithId = objectMapper.writeValueAsString(user3WithId);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -568,7 +464,7 @@ public class UserControllerTest {
                 .andExpect(status()
                         .isCreated())
                 .andExpect(content()
-                        .json(testUser3));
+                        .json(testUser3WithId));
 
 
         mockMvc.perform(put("/users/1/friends/2"))
