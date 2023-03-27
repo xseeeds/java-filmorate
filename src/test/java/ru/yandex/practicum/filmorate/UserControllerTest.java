@@ -190,7 +190,7 @@ public class UserControllerTest {
     @SneakyThrows
     void postUserEmailAndLoginConflictTest() {
 
-        String testUser =  objectMapper.writeValueAsString(user1);
+        String testUser = objectMapper.writeValueAsString(user1);
         String testUser1WithId = objectMapper.writeValueAsString(user1WithId);
 
         mockMvc.perform(post("/users")

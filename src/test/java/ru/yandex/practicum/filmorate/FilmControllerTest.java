@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,13 +37,13 @@ public class FilmControllerTest {
     private final Film failReleaseDateFilm = Film.builder().name("Name").description("Description").releaseDate(LocalDate.of(1895, 12, 27)).duration(200).build();
     private final Film boundaryReleaseDateFilm = Film.builder().name("Name").description("Description").releaseDate(LocalDate.of(1895, 12, 28)).duration(200).build();
     private final Film boundaryReleaseDateFilmWithId = Film.builder().id(1L).name("Name").description("Description").releaseDate(LocalDate.of(1895, 12, 28)).duration(200).build();
-    private final Film zeroDurationFilm = Film.builder().name("Name").description("Descrition").releaseDate(LocalDate.of(1980, 3,25)).duration(0).build();
-    private final Film negativeDurationFilm = Film.builder().name("Name").description("Descrition").releaseDate(LocalDate.of(1980,3,25)).duration(-1).build();
+    private final Film zeroDurationFilm = Film.builder().name("Name").description("Descrition").releaseDate(LocalDate.of(1980, 3, 25)).duration(0).build();
+    private final Film negativeDurationFilm = Film.builder().name("Name").description("Descrition").releaseDate(LocalDate.of(1980, 3, 25)).duration(-1).build();
     private final Film filmToUpdate = Film.builder().id(1L).name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
     private final Film emptyFilmId = Film.builder().name("Film Updated").description("New film update decription").releaseDate(LocalDate.of(1989, 4, 17)).duration(190).rate(4).build();
     private final Film filmDuplicate = Film.builder().id(2L).name("nisi eiusmod").description("adipisicing").releaseDate(LocalDate.of(1967, 3, 25)).duration(100).build();
-    private final User user = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8 ,20)).build();
-    private final User userWithId = User.builder().id(1L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8 ,20)).build();
+    private final User user = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
+    private final User userWithId = User.builder().id(1L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
 
 
     @Autowired
