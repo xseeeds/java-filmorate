@@ -12,7 +12,8 @@ import java.util.*;
 @Component
 public class FilmStorageImpl implements FilmStorage {
     protected static final TreeSet<Film> films = new TreeSet<>(Comparator
-            .comparing(Film::getName)
+            .comparing(Film::getLikesSize)
+            .thenComparing(Film::getTitle)
             .thenComparing(Film::getReleaseDate)
             .thenComparing(Film::getDuration));
     protected static final TreeSet<Long> idsFilms = new TreeSet<>();

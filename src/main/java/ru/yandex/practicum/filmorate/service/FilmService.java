@@ -143,7 +143,7 @@ public class FilmService {
         final Collection<Film> filmByPopular = filmStorage
                 .getAllFilm()
                 .stream()
-                .sorted(this::filmCompareByLikes)
+                //.sorted(this::filmCompareByLikes)
                 .limit(count)
                 .collect(toList());
 
@@ -189,13 +189,17 @@ public class FilmService {
         }
     }
 
+/*
     private int filmCompareByLikes(Film f0, Film f1) {
         return Integer.compare(f1.getLikes().size(), f0.getLikes().size());
     }
+*/
 
 
-    /*private int setRatingFilm(Film film) {
+/*
+    private int setRatingFilm(Film film) {
         return film.getLikes().values().stream().mapToInt(Integer::intValue).sum() / likes.size();
-    }*/
+    }
+*/
 
 }

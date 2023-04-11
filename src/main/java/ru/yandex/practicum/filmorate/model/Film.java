@@ -25,7 +25,7 @@ public class Film {
 
     @NotNull(groups = FilmStorage.class)
     @NotBlank(groups = FilmStorage.class)
-    private String name;
+    private String title;
 
     @Length(max = 200, groups = FilmStorage.class)
     @EqualsAndHashCode.Exclude
@@ -42,6 +42,14 @@ public class Film {
     @EqualsAndHashCode.Exclude
     private float rate;
 
+    final Set<Genre> genres = new HashSet<>();
+
+    final Set<MPA> mpaSet = new HashSet<>();
+
     //TODO TreeMap<Integer, Integer> likes; userId/rate
     final Set<Long> likes = new HashSet<>();
+
+    public int getLikesSize() {
+        return likes.size();
+    }
 }

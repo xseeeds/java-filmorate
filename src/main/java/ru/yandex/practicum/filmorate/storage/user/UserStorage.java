@@ -30,8 +30,4 @@ public interface UserStorage {
 
     long getIdOnEmail(String userEmail);
 
-    void removeOldIdByLogin(String userLogin);
-
-    void removeOldIdByEmail(String userEmail);
-
 }

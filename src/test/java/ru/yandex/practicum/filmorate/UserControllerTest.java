@@ -11,14 +11,18 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -393,38 +397,61 @@ public class UserControllerTest {
         mockMvc.perform(put("/users/1/friends/2"))
                 .andExpect(status()
                         .isOk())
-                .andExpect(jsonPath("$.friendsIds[0]")
-                        .value("2"));
-
-        mockMvc.perform(put("/users/1/friends/3"))
-                .andExpect(status()
-                        .isOk())
-                .andExpect(jsonPath("$.friendsIds[1]")
-                        .value("3"));
-
+                .andExpect(jsonPath("$.friendsIdsStatus.2").value("SUBSCRIPTION"));
 
         mockMvc.perform(get("/users/2"))
-                .andExpect(jsonPath("$.friendsIds[0]")
-                        .value("1"));
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIdsStatus.1").value("APPLICATION"));
+
+        mockMvc.perform(put("/users/2/friends/1"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIdsStatus.1").value("FRIENDSHIP"));
+
+
+        mockMvc.perform(put("/users/3/friends/1"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIdsStatus.1").value("SUBSCRIPTION"));
+
+
+        mockMvc.perform(get("/users/1"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIdsStatus.*", hasSize(2)))
+                .andExpect(jsonPath("$.friendsIdsStatus.*", hasItems("FRIENDSHIP", "APPLICATION")));
+
 
         mockMvc.perform(delete("/users/2/friends/1"))
                 .andExpect(status()
                         .isOk())
-                .andExpect(jsonPath("$.friendsIds")
+                .andExpect(jsonPath("$.friendsIdsStatus")
                         .isEmpty());
 
+        mockMvc.perform(delete("/users/2"))
+                .andExpect(status()
+                        .isOk());
+
+        mockMvc.perform(get("/users/1"))
+                .andExpect(jsonPath("$.friendsIdsStatus.*", hasSize(2)))
+                .andExpect(jsonPath("$.friendsIdsStatus.*", hasItems("SUBSCRIPTION", "APPLICATION")));
+
+
+        mockMvc.perform(delete("/users/1/friends/2"))
+                .andExpect(status()
+                        .isOk());
+
+        mockMvc.perform(delete("/users/1/friends/3"))
+                .andExpect(status()
+                        .isOk())
+                .andExpect(jsonPath("$.friendsIdsStatus")
+                        .isEmpty());
 
         mockMvc.perform(delete("/users/4"))
                 .andExpect(status()
                         .isNotFound());
 
-        mockMvc.perform(delete("/users/3"))
-                .andExpect(status()
-                        .isOk());
-
-        mockMvc.perform(get("/users/1"))
-                .andExpect(jsonPath("$.friendsIds")
-                        .isEmpty());
     }
 
 
@@ -469,21 +496,24 @@ public class UserControllerTest {
 
         mockMvc.perform(put("/users/1/friends/2"))
                 .andExpect(status()
-                        .isOk())
-                .andExpect(jsonPath("$.friendsIds[0]")
-                        .value("2"));
+                        .isOk());
+        mockMvc.perform(put("/users/2/friends/1"))
+                .andExpect(status()
+                        .isOk());
 
         mockMvc.perform(put("/users/1/friends/3"))
                 .andExpect(status()
-                        .isOk())
-                .andExpect(jsonPath("$.friendsIds[1]")
-                        .value("3"));
+                        .isOk());
+        mockMvc.perform(put("/users/3/friends/1"))
+                .andExpect(status()
+                        .isOk());
 
         mockMvc.perform(put("/users/2/friends/3"))
                 .andExpect(status()
-                        .isOk())
-                .andExpect(jsonPath("$.friendsIds[1]")
-                        .value("3"));
+                        .isOk());
+        mockMvc.perform(put("/users/3/friends/2"))
+                .andExpect(status()
+                        .isOk());
 
 
         mockMvc.perform(put("/users/3/friends/2"))

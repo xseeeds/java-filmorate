@@ -7,8 +7,8 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Value
 @Builder(toBuilder = true)
@@ -24,6 +24,7 @@ public class User {
     String email;
 
     @NotNull(groups = UserStorage.class)
+    //@Pattern(regexp = "[^' ']*", message = "Invalid login")
     @Pattern(regexp = "^\\S+$", message = "не должен быть пустым и содержать пробелы", groups = UserStorage.class)
     String login;
 
@@ -33,5 +34,6 @@ public class User {
     LocalDate birthday;
 
     @Builder.Default
-    Set<Long> friendsIds = new HashSet<>();
+    Map<Long, Status> friendsIdsStatus = new TreeMap<>();
+
 }
