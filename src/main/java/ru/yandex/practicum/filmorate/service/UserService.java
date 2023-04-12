@@ -152,7 +152,7 @@ public class UserService {
 
         if (user.getFriendsIdsStatus().get(friendId) == Status.SUBSCRIPTION || user.getFriendsIdsStatus().get(friendId) == Status.APPLICATION) {
 
-            if (friend.getFriendsIdsStatus().get(userId) != null && friend.getFriendsIdsStatus().get(userId) == Status.APPLICATION){
+            if (friend.getFriendsIdsStatus().get(userId) != null && friend.getFriendsIdsStatus().get(userId) == Status.APPLICATION) {
                 friend.getFriendsIdsStatus().remove(userId);
                 userStorageOnUpdate.updateUser(friend);
             }
