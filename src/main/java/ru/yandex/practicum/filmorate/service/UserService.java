@@ -222,11 +222,11 @@ public class UserService {
         return allFriends;
     }
 
-    public Collection<User> getCommonFriends(@Positive long userId, @Positive long friendId) throws NotFoundException, ConflictException {
+    public Collection<User> getCommonFriends(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
 
         final User user = userStorage.getUserById(userId);
 
-        final User friend = userStorage.getUserById(friendId);
+        final User friend = userStorage.getUserById(otherId);
 
         Collection<User> commonFriends = new ArrayList<>();
 
@@ -262,7 +262,7 @@ public class UserService {
                 .collect(toList());
 
         log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} ===> {}",
-                userId, friendId, commonFriends.size());
+                userId, otherId, commonFriends.size());
 
         return commonFriends;
     }
