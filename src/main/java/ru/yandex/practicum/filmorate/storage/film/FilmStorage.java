@@ -1,31 +1,13 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import org.springframework.http.ResponseEntity;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.Collection;
 
 public interface FilmStorage {
-
-    interface OnCreate {
-        Film createFilm(Film film);
-
-        void resetGlobalId();
-    }
-
-    interface OnUpdate {
-        Film updateFilm(Film film);
-    }
-
-    Film getFilm(Film film);
-
-    Film getFilmById(long filmId);
-
+    ResponseEntity<Film> addFilm(Film film);
+    ResponseEntity<Film> updateFilm(Film film);
     Collection<Film> getAllFilm();
-
-    void removeFilmById(long filmId);
-
-    void removeAllFilm();
-
-    Long getIdExistentFilm(long filmId);
-
+    ResponseEntity<String> removeAllFilm();
 }
