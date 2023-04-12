@@ -64,7 +64,6 @@
         </dependency>
 
 
-<!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jdbc</artifactId>
@@ -74,7 +73,6 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
--->
 
 <!--
         Эта ошибка может быть вызвана несколькими причинами:
