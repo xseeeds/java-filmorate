@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class UserControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
@@ -53,12 +55,6 @@ public class UserControllerTest {
     private final User userExistentLoginWithId = User.builder().id(1L).login("dolore123").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
     private final User userExistentEmailWithId = User.builder().id(2L).login("dolore").name("Nick Name").email("mail123@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
 
-    @Autowired
-    UserControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, UserService userService) {
-        this.mockMvc = mockMvc;
-        this.objectMapper = objectMapper;
-        this.userService = userService;
-    }
 
     @AfterEach
     void ternDown() {

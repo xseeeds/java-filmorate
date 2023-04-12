@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 @Service
 @Slf4j
 @Validated
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class UserService {
     private final UserStorage userStorage;
     private final UserStorage.OnCreate userStorageOnCreate;
@@ -28,15 +30,6 @@ public class UserService {
 
     private User user;
     private User friend;
-
-    @Autowired
-    public UserService(UserStorage userStorage,
-                       UserStorage.OnCreate userStorageOnCreate,
-                       UserStorage.OnUpdate userStorageOnUpdate) {
-        this.userStorage = userStorage;
-        this.userStorageOnCreate = userStorageOnCreate;
-        this.userStorageOnUpdate = userStorageOnUpdate;
-    }
 
 
     @Validated({UserStorage.OnCreate.class, UserStorage.class})

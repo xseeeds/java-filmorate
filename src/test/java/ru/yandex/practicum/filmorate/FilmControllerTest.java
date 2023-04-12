@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
@@ -45,14 +47,6 @@ public class FilmControllerTest {
     private final Film filmDuplicate = Film.builder().id(2L).title("nisi eiusmod").description("adipisicing").releaseDate(LocalDate.of(1967, 3, 25)).duration(100).build();
     private final User user = User.builder().login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
     private final User userWithId = User.builder().id(1L).login("dolore").name("Nick Name").email("mail@mail.ru").birthday(LocalDate.of(1946, 8, 20)).build();
-
-
-    @Autowired
-    FilmControllerTest(MockMvc mockMvc, ObjectMapper objectMapper, FilmService filmService) {
-        this.mockMvc = mockMvc;
-        this.objectMapper = objectMapper;
-        this.filmService = filmService;
-    }
 
 
     @AfterEach
