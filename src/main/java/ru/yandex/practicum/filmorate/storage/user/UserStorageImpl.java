@@ -40,13 +40,12 @@ public class UserStorageImpl implements UserStorage {
 
     @Override
     public void removeUserById(long userId) {
-        if (users.containsKey(userId)) {
-            final User user = users.remove(userId);
-            userLogins.remove(user.getLogin());
-            userEmails.remove(user.getEmail());
-            return;
+        if (!users.containsKey(userId)) {
+            throw new NotFoundException("Такой user c id=>" + userId + " не существует");
         }
-        throw new NotFoundException("Такой user c id=>" + userId + " не существует");
+        final User user = users.remove(userId);
+        userLogins.remove(user.getLogin());
+        userEmails.remove(user.getEmail());
     }
 
     @Override
@@ -59,13 +58,4 @@ public class UserStorageImpl implements UserStorage {
         return userEmails.getOrDefault(updateUserEmail, 0L);
     }
 
-    @Override
-    public void removeOldIdByLogin(String userLogin) {
-        userLogins.remove(userLogin);
-    }
-
-    @Override
-    public void removeOldIdByEmail(String userEmail) {
-        userEmails.remove(userEmail);
-    }
 }

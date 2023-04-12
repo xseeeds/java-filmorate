@@ -31,7 +31,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.13.4</version>
+            <version>2.14.2</version>
         </dependency>
 
         <dependency>
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.14</version>
+            <version>1.6.15</version>
         </dependency>
 
         <dependency>
@@ -62,6 +62,40 @@
             <optional>true</optional>
             <scope>provided</scope>
         </dependency>
+
+
+<!--
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+-->
+
+<!--
+        Эта ошибка может быть вызвана несколькими причинами:
+
+        1. Не хватает зависимостей - убедитесь, что все необходимые зависимости
+        добавлены в файл pom.xml.
+
+        2. Проблемы с конфигурацией базы данных - проверьте, что данные для подключения
+        к базе данных правильно настроены в файле application.properties или application.yml.
+
+        3. Проблемы с настройками тестовой среды - убедитесь, что тестовая среда настроена
+        правильно и имеет доступ к базе данных.
+
+        4. Проблемы с аннотациями - проверьте, что все аннотации, используемые в тестовом классе,
+        правильно настроены и относятся к тестовой библиотеке JUnit 5.
+
+        При отладке такой ошибки важно проверить все свои зависимости и настройки, чтобы убедиться,
+        что они правильно настроены и соответствуют вашим требованиям.
+        Если ошибка продолжает возникать, попробуйте запустить тестовый класс в более простой среде,
+        чтобы выяснить, где возникает проблема.
+-->
 
     </dependencies>
 

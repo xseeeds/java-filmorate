@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,24 +21,12 @@ import static java.util.stream.Collectors.toList;
 @Service
 @Slf4j
 @Validated
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmService {
     private final FilmStorage filmStorage;
     private final FilmStorage.OnCreate filmStorageOnCreate;
     private final FilmStorage.OnUpdate filmStorageOnUpdate;
     private final UserService userService;
-
-    @Autowired
-    public FilmService(
-            FilmStorage filmStorage,
-            UserService userService,
-            FilmStorage.OnCreate filmStorageOnCreate,
-            FilmStorage.OnUpdate filmStorageOnUpdate
-    ) {
-        this.filmStorage = filmStorage;
-        this.userService = userService;
-        this.filmStorageOnCreate = filmStorageOnCreate;
-        this.filmStorageOnUpdate = filmStorageOnUpdate;
-    }
 
 
     @Validated({FilmStorage.OnCreate.class, FilmStorage.class})
@@ -143,7 +132,7 @@ public class FilmService {
         final Collection<Film> filmByPopular = filmStorage
                 .getAllFilm()
                 .stream()
-                .sorted(this::filmCompareByLikes)
+                //.sorted(this::filmCompareByLikes)
                 .limit(count)
                 .collect(toList());
 
@@ -189,13 +178,17 @@ public class FilmService {
         }
     }
 
+/*
     private int filmCompareByLikes(Film f0, Film f1) {
         return Integer.compare(f1.getLikes().size(), f0.getLikes().size());
     }
+*/
 
 
-    /*private int setRatingFilm(Film film) {
+/*
+    private int setRatingFilm(Film film) {
         return film.getLikes().values().stream().mapToInt(Integer::intValue).sum() / likes.size();
-    }*/
+    }
+*/
 
 }
