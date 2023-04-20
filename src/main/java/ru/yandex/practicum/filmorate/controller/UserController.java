@@ -52,27 +52,27 @@ public class UserController {
         return ResponseEntity.ok(userService.removeUserById(userId));
     }
 
-    @PutMapping("/{userId}/friends/{friendId}")
+    @PutMapping("/{userId}/friends/{otherId}")
     @ResponseStatus(HttpStatus.OK)
-    public User addFriends(@PathVariable long userId, @PathVariable long friendId) {
-        return userService.addFriends(userId, friendId);
+    public User addFriends(@PathVariable long userId, @PathVariable long otherId) {
+        return userService.addFriends(userId, otherId);
     }
 
-    @DeleteMapping("/{userId}/friends/{friendId}")
+    @DeleteMapping("/{userId}/friends/{otherId}")
     @ResponseStatus(HttpStatus.OK)
-    public User removeFriends(@PathVariable long userId, @PathVariable long friendId) {
-        return userService.removeFriends(userId, friendId);
+    public User removeFriends(@PathVariable long userId, @PathVariable long otherId) {
+        return userService.removeFriends(userId, otherId);
     }
 
     @GetMapping("/{userId}/friends")
     @ResponseStatus(HttpStatus.OK)
     public Collection<User> getFriends(@PathVariable long userId) {
-        return userService.getFriends(userId);
+        return userService.getAllFriendsByUser(userId);
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
     @ResponseStatus(HttpStatus.OK)
     public Collection<User> getCommonFriends(@PathVariable long userId, @PathVariable long otherId) {
-        return userService.getCommonFriends(userId, otherId);
+        return userService.getCommonFriendsByUser(userId, otherId);
     }
 }

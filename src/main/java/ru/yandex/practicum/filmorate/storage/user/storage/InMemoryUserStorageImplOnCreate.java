@@ -1,11 +1,13 @@
-package ru.yandex.practicum.filmorate.storage.user;
+package ru.yandex.practicum.filmorate.storage.user.storage;
 
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+
 
 
 @Component
-public class UserStorageImplOnCreateUser implements UserStorage.OnCreate {
+public class InMemoryUserStorageImplOnCreate implements UserStorage.OnCreate {
 
     private long globalId = 0;
     private User userBuilder;
@@ -19,17 +21,15 @@ public class UserStorageImplOnCreateUser implements UserStorage.OnCreate {
                     .name(user.getLogin())
                     .id(getNextId())
                     .build();
-        }
-
-        if (user.getName() != null && !user.getName().isBlank()) {
+        } else {
             userBuilder = user
                     .toBuilder()
                     .id(getNextId())
                     .build();
         }
-        UserStorageImpl.users.put(userBuilder.getId(), userBuilder);
-        UserStorageImpl.userEmails.put(userBuilder.getEmail(), userBuilder.getId());
-        UserStorageImpl.userLogins.put(userBuilder.getLogin(), userBuilder.getId());
+        InMemoryUserStorageImpl.users.put(userBuilder.getId(), userBuilder);
+        InMemoryUserStorageImpl.userEmails.put(userBuilder.getEmail(), userBuilder.getId());
+        InMemoryUserStorageImpl.userLogins.put(userBuilder.getLogin(), userBuilder.getId());
 
         return userBuilder;
     }

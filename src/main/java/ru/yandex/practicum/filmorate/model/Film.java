@@ -1,10 +1,11 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.hibernate.validator.constraints.Length;
-import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthday;
+import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthdayValidator;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 
@@ -25,30 +26,31 @@ public class Film {
 
     @NotNull(groups = FilmStorage.class)
     @NotBlank(groups = FilmStorage.class)
-    private String title;
+    private String name;
 
     @Length(max = 200, groups = FilmStorage.class)
     @EqualsAndHashCode.Exclude
     private String description;
 
-    @FirstFilmBirthday(groups = FilmStorage.class)
-    private LocalDate releaseDate;
-
     @Positive(groups = FilmStorage.class)
     private int duration;
+
+    @FirstFilmBirthdayValidator(groups = FilmStorage.class)
+    private LocalDate releaseDate;
 
     @Max(value = 10, groups = FilmStorage.class)
     @PositiveOrZero(groups = FilmStorage.class)
     @EqualsAndHashCode.Exclude
     private float rate;
 
-    final Set<Genre> genres = new HashSet<>();
+    private Mpa mpa;
 
-    final Set<MPA> mpaSet = new HashSet<>();
+    private final Set<Genre> genres = new HashSet<>();
 
     //TODO TreeMap<Integer, Integer> likes; userId/rate
-    final Set<Long> likes = new HashSet<>();
+    private final Set<Long> likes = new HashSet<>();
 
+    @JsonIgnore
     public int getLikesSize() {
         return likes.size();
     }

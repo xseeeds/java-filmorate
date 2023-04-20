@@ -26,7 +26,7 @@ public class ErrorHandler {
             final NotFoundException e
     ) {
         log.error(e.getMessage(), e);
-        return new ErrorResponse(e.getMessage());
+        return new ErrorResponse(HttpStatus.NOT_FOUND.toString(), "errorNotFoundException", e.getMessage());
     }
 
     @ExceptionHandler
@@ -35,7 +35,7 @@ public class ErrorHandler {
             final ConflictException e
     ) {
         log.error(e.getMessage(), e);
-        return new ErrorResponse(e.getMessage());
+        return new ErrorResponse(HttpStatus.CONFLICT.toString(), "errorConflictException", e.getMessage());
     }
 
 

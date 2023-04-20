@@ -20,6 +20,7 @@ public class User {
     @NotNull(groups = UserStorage.OnUpdate.class, message = "PUT request. Для обновления используй id!!! в теле запроса user")
     Long id;
 
+    //@Email(regexp = "[A-Za-z0-9._%-+]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}", message = "Пожалуйста укажите действительный адрес")
     @Email(groups = UserStorage.class)
     String email;
 

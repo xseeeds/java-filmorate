@@ -1,19 +1,20 @@
-package ru.yandex.practicum.filmorate.storage.film;
+package ru.yandex.practicum.filmorate.storage.film.storage;
 
 
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 @Component
-public class FilmStorageImplOnCreateFilm implements FilmStorage.OnCreate {
+public class InMemoryFilmStorageImplOnCreate implements FilmStorage.OnCreate {
 
     private long globalId = 0;
 
     @Override
     public Film createFilm(Film film) {
         film.setId(getNextId());
-        FilmStorageImpl.films.add(film);
-        FilmStorageImpl.idsFilms.add(film.getId());
+        InMemoryFilmStorageImpl.films.add(film);
+        InMemoryFilmStorageImpl.idsFilms.add(film.getId());
         return film;
     }
 
