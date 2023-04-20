@@ -1,22 +1,23 @@
-package ru.yandex.practicum.filmorate.storage.film;
+package ru.yandex.practicum.filmorate.storage.film.storage;
 
 
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.Optional;
 
 @Component
-public class FilmStorageImplOnUpdateFilm implements FilmStorage.OnUpdate {
+public class InMemoryFilmStorageImplOnUpdate implements FilmStorage.OnUpdate {
     @Override
     public Film updateFilm(Film film) {
-        Optional<Film> oldFilm = FilmStorageImpl.films
+        Optional<Film> oldFilm = InMemoryFilmStorageImpl.films
                 .stream()
                 .filter(f -> f.getId().equals(film.getId()))
                 .findFirst();
         if (oldFilm.isPresent()) {
-            FilmStorageImpl.films.remove(oldFilm.get());
-            FilmStorageImpl.films.add(film);
+            InMemoryFilmStorageImpl.films.remove(oldFilm.get());
+            InMemoryFilmStorageImpl.films.add(film);
         }
         return film;
     }

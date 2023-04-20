@@ -54,14 +54,14 @@ public class FilmController {
 
     @PutMapping("/{filmId}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public Film addUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
-        return filmService.addUserLikeByFilmId(filmId, userId);
+    public void addUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
+        filmService.addUserLikeByFilmId(filmId, userId);
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public Film removeUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
-        return filmService.removeUserLikeByFilmId(filmId, userId);
+    public void removeUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
+        filmService.removeUserLikeByFilmId(filmId, userId);
     }
 
     @GetMapping("/popular")
@@ -70,4 +70,6 @@ public class FilmController {
             @RequestParam(value = "count", defaultValue = "10", required = false) int count) {
         return filmService.getFilmByPopular(count);                         //?count={count}
     }
+
+
 }

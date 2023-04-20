@@ -1,24 +1,25 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
+import ru.yandex.practicum.filmorate.storage.film.GenreStorage;
 
-@AllArgsConstructor
-@Getter
-public enum Genre {
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Null;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Positive;
 
-    Comedy("Комедия", 1),
+@Data
+@Builder
+public class Genre {
 
-    Drama("Драма", 2),
+    @Null(groups = GenreStorage.OnCreate.class)
+    @NotNull(groups = GenreStorage.OnUpdate.class)
+    @Positive(groups = GenreStorage.class)
+    private Integer id;
 
-    Cartoon("Мультфильм", 3),
+    @NotNull(groups = GenreStorage.class)
+    @Pattern(regexp = "^\\S+$", message = "не должен быть пустым и содержать пробелы", groups = GenreStorage.class)
+    private String name;
 
-    Thriller("Триллер", 4),
-
-    Documentary("Документальный", 5),
-
-    ActionMovie("Боевик", 6);
-
-    private final String genre;
-    private final int id;
 }
