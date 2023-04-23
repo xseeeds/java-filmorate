@@ -17,7 +17,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Repository
+@Repository("userStorage")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbUserStorageImpl implements UserStorage {
     private final JdbcTemplate jdbcTemplate;

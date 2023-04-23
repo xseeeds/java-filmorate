@@ -23,20 +23,19 @@ import static ru.yandex.practicum.filmorate.model.Status.*;
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class UserDatabaseTest {
-    private final UserStorage dbUserStorageImpl;
-
+    private final UserStorage userStorage;
     private final UserService userService;
 
     @AfterEach
     public void ternDown() {
-        dbUserStorageImpl.removeAllUser();
+        userStorage.removeAllUser();
     }
 
     @Test
     public void testUserCreateGetUpdateCheck() {
 
         assertThatThrownBy(
-                () -> dbUserStorageImpl.checkUserById(1L))
+                () -> userStorage.checkUserById(1L))
                 .isInstanceOf(
                         NotFoundException.class)
                 .hasMessageContaining(
@@ -45,18 +44,18 @@ class UserDatabaseTest {
         assertThatExceptionOfType(
                 NotFoundException.class)
                 .isThrownBy(
-                        () -> dbUserStorageImpl.getUserById(1L))
+                        () -> userStorage.getUserById(1L))
                 .withMessageMatching(
                         "Такой пользователь c id => 1 не существует");
 
 
-        final Collection<User> users = dbUserStorageImpl.getAllUser();
+        final Collection<User> users = userStorage.getAllUser();
 
         assertThat(users)
                 .size()
                 .isZero();
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("John Winston Lennon")
@@ -64,7 +63,7 @@ class UserDatabaseTest {
                         .login("john")
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
-        User john = dbUserStorageImpl.getUserById(1L);
+        User john = userStorage.getUserById(1L);
 
         assertThat(
                 john)
@@ -79,15 +78,15 @@ class UserDatabaseTest {
                 .name("John Ono Lennon")
                 .build();
 
-        dbUserStorageImpl.updateUser(johnNewName);
-        johnNewName = dbUserStorageImpl.getUserById(1L);
+        userStorage.updateUser(johnNewName);
+        johnNewName = userStorage.getUserById(1L);
 
         assertThat(
                 johnNewName)
                 .hasFieldOrPropertyWithValue(
                         "name", "John Ono Lennon");
 
-        final Collection<User> allUsers = dbUserStorageImpl.getAllUser();
+        final Collection<User> allUsers = userStorage.getAllUser();
 
         assertThat(
                 allUsers)
@@ -99,7 +98,7 @@ class UserDatabaseTest {
     @Test
     public void testUserCheckLoginAndEmail() {
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("John")
@@ -111,32 +110,32 @@ class UserDatabaseTest {
         assertThatExceptionOfType(
                 ConflictException.class)
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserLogin("john"))
+                        () -> userStorage.checkUserLogin("john"))
                             .withMessageMatching(
                         "Такой пользователь с login: john уже существует, по id => 1 для обновления используй PUT запрос");
 
         assertThatNoException()
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserLogin("john1"));
+                        () -> userStorage.checkUserLogin("john1"));
 
 
         assertThatExceptionOfType(
                 ConflictException.class)
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserEmail("john@beatles.uk"))
+                        () -> userStorage.checkUserEmail("john@beatles.uk"))
                 .withMessageMatching(
                         "Такой пользователь с email:john@beatles.uk уже существует, по id => 1 для обновления используй PUT запрос");
 
         assertThatNoException()
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserEmail("john1@beatles.uk"));
+                        () -> userStorage.checkUserEmail("john1@beatles.uk"));
 
     }
 
     @Test
     public void testUserFriend() {
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("John")
@@ -144,7 +143,7 @@ class UserDatabaseTest {
                         .login("john")
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("Paul")
@@ -153,16 +152,16 @@ class UserDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        dbUserStorageImpl.addFriend(1L, 2L, FRIENDSHIP);
+        userStorage.addFriend(1L, 2L, FRIENDSHIP);
 
 
         assertThat(
-                dbUserStorageImpl.getAllFriendsByUserId(1L))
+                userStorage.getAllFriendsByUserId(1L))
                 .size()
                 .isEqualTo(1);
 
         assertThat(
-                dbUserStorageImpl.getAllFriendsByUserId(2L))
+                userStorage.getAllFriendsByUserId(2L))
                 .size()
                 .isZero();
 
@@ -170,26 +169,26 @@ class UserDatabaseTest {
         assertThatExceptionOfType(
                 ConflictException.class)
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserFriendById(1L, 2L, true))
+                        () -> userStorage.checkUserFriendById(1L, 2L, true))
                 .withMessageMatching(
                         "У пользователя с id => 1 уже существует дружба с id => 2");
 
         assertThatNoException()
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserFriendById(2L, 1L, true));
+                        () -> userStorage.checkUserFriendById(2L, 1L, true));
 
         assertThatNoException()
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserFriendById(1L, 2L, false));
+                        () -> userStorage.checkUserFriendById(1L, 2L, false));
 
 
-        dbUserStorageImpl.removeFriend(1L, 2L);
+        userStorage.removeFriend(1L, 2L);
 
 
         assertThatExceptionOfType(
                 NotFoundException.class)
                 .isThrownBy(
-                        () -> dbUserStorageImpl.checkUserFriendById(1L, 2L, false))
+                        () -> userStorage.checkUserFriendById(1L, 2L, false))
                 .withMessageMatching(
                         "У пользователя с id => 1 не существует друга/заявки/подписки c id => 2");
     }
@@ -197,7 +196,7 @@ class UserDatabaseTest {
     @Test
     public void testFriendship() {
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("John")
@@ -206,7 +205,7 @@ class UserDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("Paul")
@@ -215,7 +214,7 @@ class UserDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("Simon")
@@ -227,32 +226,32 @@ class UserDatabaseTest {
 
         userService.addFriend(1, 2);
 
-        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 2, SUBSCRIPTION))
+        assertThat(userStorage.checkStatusFriendship(1, 2, SUBSCRIPTION))
                 .isTrue();
-        assertThat(dbUserStorageImpl.checkStatusFriendship(2, 1, APPLICATION))
+        assertThat(userStorage.checkStatusFriendship(2, 1, APPLICATION))
                 .isTrue();
 
         userService.addFriend(2, 1);
 
-        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 2, FRIENDSHIP))
+        assertThat(userStorage.checkStatusFriendship(1, 2, FRIENDSHIP))
                 .isTrue();
-        assertThat(dbUserStorageImpl.checkStatusFriendship(2, 1, FRIENDSHIP))
+        assertThat(userStorage.checkStatusFriendship(2, 1, FRIENDSHIP))
                 .isTrue();
 
         userService.addFriend(3, 1);
 
-        assertThat(dbUserStorageImpl.checkStatusFriendship(3, 1, SUBSCRIPTION))
+        assertThat(userStorage.checkStatusFriendship(3, 1, SUBSCRIPTION))
                 .isTrue();
-        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 3, APPLICATION))
+        assertThat(userStorage.checkStatusFriendship(1, 3, APPLICATION))
                 .isTrue();
 
-        final Collection<User> allFriends = dbUserStorageImpl.getAllFriendsByUserId(1);
+        final Collection<User> allFriends = userStorage.getAllFriendsByUserId(1);
 
         assertThat(allFriends)
                 .size()
                 .isEqualTo(1);
 
-        final Collection<User> commonFriends = dbUserStorageImpl.getCommonFriendsByUser(2, 3);
+        final Collection<User> commonFriends = userStorage.getCommonFriendsByUser(2, 3);
 
         assertThat(commonFriends)
                 .size()
@@ -260,21 +259,21 @@ class UserDatabaseTest {
 
         userService.removeFriend(2, 1);
 
-        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 2, SUBSCRIPTION))
+        assertThat(userStorage.checkStatusFriendship(1, 2, SUBSCRIPTION))
                 .isTrue();
-        assertThat(dbUserStorageImpl.checkFriendship(2, 1))
+        assertThat(userStorage.checkFriendship(2, 1))
                 .isFalse();
 
         userService.removeFriend(1, 2);
 
-        assertThat(dbUserStorageImpl.checkFriendship(1, 2))
+        assertThat(userStorage.checkFriendship(1, 2))
                 .isFalse();
 
         userService.removeFriend(1, 3);
 
-        assertThat(dbUserStorageImpl.checkFriendship(1, 3))
+        assertThat(userStorage.checkFriendship(1, 3))
                 .isFalse();
-        assertThat(dbUserStorageImpl.checkStatusFriendship(3, 1, SUBSCRIPTION))
+        assertThat(userStorage.checkStatusFriendship(3, 1, SUBSCRIPTION))
                 .isTrue();
     }
 

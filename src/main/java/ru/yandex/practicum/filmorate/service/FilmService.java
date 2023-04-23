@@ -22,17 +22,16 @@ import java.util.Collection;
 @Validated
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmService {
-    private final FilmStorage dbFilmStorageImpl;
-
-    private final UserStorage dbUserStorageImpl;
+    private final FilmStorage filmStorage;
+    private final UserStorage userStorage;
 
 
     @Validated
     public Film createFilm(@Valid Film film) throws ConflictException {
 
-        dbFilmStorageImpl.checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDateDuration(film);
 
-        final Film createdFilm = dbFilmStorageImpl.createFilm(film);
+        final Film createdFilm = filmStorage.createFilm(film);
 
         log.info("Фильм добавлен => {}", createdFilm);
 
@@ -42,11 +41,11 @@ public class FilmService {
     @Validated
     public Film updateFilm(@Valid Film film) throws NotFoundException, ConflictException {
 
-        dbFilmStorageImpl.checkFilmById(film.getId());
+        filmStorage.checkFilmById(film.getId());
 
-        dbFilmStorageImpl.checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDateDuration(film);
 
-        final Film updatedFilm = dbFilmStorageImpl.updateFilm(film);
+        final Film updatedFilm = filmStorage.updateFilm(film);
 
         log.info("Фильм обновлен => {}", updatedFilm);
 
@@ -55,7 +54,7 @@ public class FilmService {
 
     public Collection<Film> getAllFilm() {
 
-        final Collection<Film> allFilm = dbFilmStorageImpl.getAllFilm();
+        final Collection<Film> allFilm = filmStorage.getAllFilm();
 
         log.info("Фильм получены (кол-во) => {}", allFilm.size());
 
@@ -64,7 +63,7 @@ public class FilmService {
 
     public Film getFilmById(@Positive long filmId) throws NotFoundException {
 
-        final Film film = dbFilmStorageImpl.getFilmById(filmId);
+        final Film film = filmStorage.getFilmById(filmId);
 
         log.info("Фильм получен c id => {} =>>> {}", filmId, film);
 
@@ -73,7 +72,7 @@ public class FilmService {
 
     public String removeAllFilm() {
 
-        dbFilmStorageImpl.removeAllFilm();
+        filmStorage.removeAllFilm();
 
         log.info("Все фильмы удалены, id сброшен");
 
@@ -82,7 +81,7 @@ public class FilmService {
 
     public String removeFilmById(@Positive long filmId) throws NotFoundException {
 
-        dbFilmStorageImpl.removeFilmById(filmId);
+        filmStorage.removeFilmById(filmId);
 
         log.info("Фильм c id => {} удален", filmId);
 
@@ -91,33 +90,33 @@ public class FilmService {
 
     public void addUserLikeByFilmId(@Positive long filmId, @Positive long userId) throws ConflictException, NotFoundException {
 
-        dbFilmStorageImpl.checkFilmById(filmId);
+        filmStorage.checkFilmById(filmId);
 
-        dbUserStorageImpl.checkUserById(userId);
+        userStorage.checkUserById(userId);
 
-        dbFilmStorageImpl.checkFilmLikeByUserId(filmId, userId, true);
+        filmStorage.checkFilmLikeByUserId(filmId, userId, true);
 
-        dbFilmStorageImpl.addUserLikeOnFilm(filmId, userId);
+        filmStorage.addUserLikeOnFilm(filmId, userId);
 
         log.info("Пользователем c id => {} добавлен лайк фильму c id => {}", userId, filmId);
     }
 
     public void removeUserLikeByFilmId(@Positive long filmId, @Min(-2) long userId) throws ConflictException, NotFoundException {
 
-        dbFilmStorageImpl.checkFilmById(filmId);
+        filmStorage.checkFilmById(filmId);
 
-        dbUserStorageImpl.checkUserById(userId);
+        userStorage.checkUserById(userId);
 
-        dbFilmStorageImpl.checkFilmLikeByUserId(filmId, userId, false);
+        filmStorage.checkFilmLikeByUserId(filmId, userId, false);
 
-        dbFilmStorageImpl.removeUserLikeOnFilm(filmId, userId);
+        filmStorage.removeUserLikeOnFilm(filmId, userId);
 
         log.info("Пользователем c id => {} удален лайк у фильма c id => {}", userId, filmId);
     }
 
     public Collection<Film> getFilmByPopular(@Positive int count) {
 
-        final Collection<Film> filmByPopular = dbFilmStorageImpl.getFilmByPopular(count);
+        final Collection<Film> filmByPopular = filmStorage.getFilmByPopular(count);
 
         log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
 

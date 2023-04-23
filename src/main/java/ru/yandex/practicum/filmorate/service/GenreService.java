@@ -19,14 +19,13 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class GenreService {
-    private final GenreStorage dbGenreStorageImpl;
-
-    private final FilmStorage dbFilmStorageImpl;
+    private final GenreStorage genreStorage;
+    private final FilmStorage filmStorage;
 
 
     public List<Genre> getGenres() {
 
-        List<Genre> allGenres = dbGenreStorageImpl.getGenreList();
+        List<Genre> allGenres = genreStorage.getGenreList();
 
         log.info("Жанры получены (кол-во) => {}", allGenres.size());
 
@@ -35,7 +34,7 @@ public class GenreService {
 
     public Genre getGenreById(@Positive int id) throws NotFoundException {
 
-        final Genre genre = dbGenreStorageImpl.getGenreById(id);
+        final Genre genre = genreStorage.getGenreById(id);
 
         log.info("Жанр получен по id => {}", id);
 
@@ -45,9 +44,9 @@ public class GenreService {
     @Validated
     public Genre createGenre(@Valid Genre genre) throws NotFoundException {
 
-        dbGenreStorageImpl.checkGenre(genre);
+        genreStorage.checkGenre(genre);
 
-        Genre result = dbGenreStorageImpl.createGenre(genre);
+        Genre result = genreStorage.createGenre(genre);
 
         log.info("Жанр добавлен => {}", genre);
 
@@ -58,45 +57,45 @@ public class GenreService {
     @Validated
     public Genre updateGenre(@Valid Genre genre) throws NotFoundException {
 
-        dbGenreStorageImpl.checkGenreById(genre.getId());
+        genreStorage.checkGenreById(genre.getId());
 
-        dbGenreStorageImpl.checkGenre(genre);
+        genreStorage.checkGenre(genre);
 
         log.info("Жанр обновлен => {}", genre);
 
-        return dbGenreStorageImpl.updateGenre(genre);
+        return genreStorage.updateGenre(genre);
 
     }
 
     public void addGenreOnFilm(@Positive int genreId, @Positive long filmId) {
 
-        dbGenreStorageImpl.checkGenreById(genreId);
+        genreStorage.checkGenreById(genreId);
 
-        dbFilmStorageImpl.checkFilmById(filmId);
+        filmStorage.checkFilmById(filmId);
 
-        dbGenreStorageImpl.checkGenreOnFilm(genreId, filmId, true);
+        genreStorage.checkGenreOnFilm(genreId, filmId, true);
 
         log.info("Фильму c id => {} добавлен жанр c id => {}", filmId, genreId);
 
-        dbGenreStorageImpl.addGenreOnFilm(genreId, filmId);
+        genreStorage.addGenreOnFilm(genreId, filmId);
     }
 
     public void removeGenreOnFilm(@Positive int genreId, @Positive long filmId) {
 
-        dbGenreStorageImpl.checkGenreById(genreId);
+        genreStorage.checkGenreById(genreId);
 
-        dbFilmStorageImpl.checkFilmById(filmId);
+        filmStorage.checkFilmById(filmId);
 
-        dbGenreStorageImpl.checkGenreOnFilm(genreId, filmId, false);
+        genreStorage.checkGenreOnFilm(genreId, filmId, false);
 
         log.info("У фильму c id => {} удален жанр c id => {}", filmId, genreId);
 
-        dbGenreStorageImpl.removeGenreOnFilm(genreId, filmId);
+        genreStorage.removeGenreOnFilm(genreId, filmId);
     }
 
     public String removeAllGenre() {
 
-        dbGenreStorageImpl.removeAllGenre();
+        genreStorage.removeAllGenre();
 
         log.info("Все жанры удалены, id сброшен");
 
@@ -105,9 +104,9 @@ public class GenreService {
 
     public String removeGenreById(@Positive int genreId) throws NotFoundException {
 
-        dbGenreStorageImpl.checkGenreById(genreId);
+        genreStorage.checkGenreById(genreId);
 
-        dbGenreStorageImpl.removeGenreById(genreId);
+        genreStorage.removeGenreById(genreId);
 
         log.info("Фильм c id => {} удален", genreId);
 

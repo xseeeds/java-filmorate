@@ -28,23 +28,21 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmGenreDatabaseTest {
-    private final FilmStorage dbFilmStorageImpl;
-
-    private final UserStorage dbUserStorageImpl;
-
-    private final GenreStorage dbGenreStorage;
+    private final FilmStorage filmStorage;
+    private final UserStorage userStorage;
+    private final GenreStorage genreStorage;
 
 
     @AfterEach
     public void ternDown() {
-        dbFilmStorageImpl.removeAllFilm();
+        filmStorage.removeAllFilm();
     }
 
     @Test
     public void testFilmCreateGetUpdateCheck() {
 
         assertThatThrownBy(
-                () -> dbFilmStorageImpl.checkFilmById(1L))
+                () -> filmStorage.checkFilmById(1L))
                 .isInstanceOf(
                         NotFoundException.class)
                 .hasMessageContaining(
@@ -53,18 +51,18 @@ public class FilmGenreDatabaseTest {
         assertThatExceptionOfType(
                 NotFoundException.class)
                 .isThrownBy(
-                        () -> dbFilmStorageImpl.getFilmById(1L))
+                        () -> filmStorage.getFilmById(1L))
                 .withMessageMatching(
                         "Такой фильм с id => 1 не существует");
 
 
-        final Collection<Film> films = dbFilmStorageImpl.getAllFilm();
+        final Collection<Film> films = filmStorage.getAllFilm();
 
         assertThat(films)
                 .size()
                 .isZero();
 
-        dbFilmStorageImpl.createFilm(
+        filmStorage.createFilm(
                 Film
                         .builder()
                         .name("The Shawshank Redemption")
@@ -74,7 +72,7 @@ public class FilmGenreDatabaseTest {
                         .mpa(Mpa.builder().id(1).build())
                         .build());
 
-        final Film film1 = dbFilmStorageImpl.getFilmById(1L);
+        final Film film1 = filmStorage.getFilmById(1L);
 
         assertThat(film1)
                 .isNotNull()
@@ -87,14 +85,14 @@ public class FilmGenreDatabaseTest {
 
         film1.setRate((float) 5);
 
-        dbFilmStorageImpl.updateFilm(film1);
+        filmStorage.updateFilm(film1);
 
         assertThat(
                 film1)
                 .hasFieldOrPropertyWithValue(
                         "rate", (float) 5);
 
-        final Collection<Film> allFilms = dbFilmStorageImpl.getAllFilm();
+        final Collection<Film> allFilms = filmStorage.getAllFilm();
 
         assertThat(
                 allFilms)
@@ -106,7 +104,7 @@ public class FilmGenreDatabaseTest {
     @Test
     public void testCheckFilmByNameReleaseDateDuration() {
 
-        dbFilmStorageImpl.createFilm(
+        filmStorage.createFilm(
                 Film
                         .builder()
                         .name("The Shawshank Redemption")
@@ -117,7 +115,7 @@ public class FilmGenreDatabaseTest {
                         .build());
 
         assertThatThrownBy(
-                () -> dbFilmStorageImpl.checkFilmByNameReleaseDateDuration(
+                () -> filmStorage.checkFilmByNameReleaseDateDuration(
                         Film
                                 .builder()
                                 .name("The Shawshank Redemption")
@@ -135,7 +133,7 @@ public class FilmGenreDatabaseTest {
     @Test
     public void testAddAndRemoveUserLikeOnFilm() {
 
-        dbFilmStorageImpl.createFilm(
+        filmStorage.createFilm(
                 Film
                         .builder()
                         .name("The Shawshank Redemption")
@@ -145,7 +143,7 @@ public class FilmGenreDatabaseTest {
                         .mpa(Mpa.builder().id(1).build())
                         .build());
 
-        dbFilmStorageImpl.createFilm(
+        filmStorage.createFilm(
                 Film
                         .builder()
                         .name("The Godfather")
@@ -155,7 +153,7 @@ public class FilmGenreDatabaseTest {
                         .mpa(Mpa.builder().id(1).build())
                         .build());
 
-        dbUserStorageImpl.createUser(
+        userStorage.createUser(
                 User
                         .builder()
                         .name("John")
@@ -164,37 +162,37 @@ public class FilmGenreDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        dbFilmStorageImpl.addUserLikeOnFilm(2L, 1L);
+        filmStorage.addUserLikeOnFilm(2L, 1L);
 
         assertThat(
-                new ArrayList<>(dbFilmStorageImpl.getFilmByPopular(10)).get(0))
+                new ArrayList<>(filmStorage.getFilmByPopular(10)).get(0))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Godfather");
 
         assertThat(
-                new ArrayList<>(dbFilmStorageImpl.getFilmByPopular(10)).get(1))
+                new ArrayList<>(filmStorage.getFilmByPopular(10)).get(1))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Shawshank Redemption");
 
 
-        dbFilmStorageImpl.removeUserLikeOnFilm(2L, 1L);
-        dbFilmStorageImpl.addUserLikeOnFilm(1L, 1L);
+        filmStorage.removeUserLikeOnFilm(2L, 1L);
+        filmStorage.addUserLikeOnFilm(1L, 1L);
 
         assertThat(
                 new ArrayList<>(
-                        dbFilmStorageImpl.getFilmByPopular(10)).get(0))
+                        filmStorage.getFilmByPopular(10)).get(0))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Shawshank Redemption");
 
         assertThat(
                 new ArrayList<>(
-                        dbFilmStorageImpl.getFilmByPopular(10)).get(1))
+                        filmStorage.getFilmByPopular(10)).get(1))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Godfather");
 
 
         assertThatThrownBy(
-                () -> dbFilmStorageImpl.checkFilmLikeByUserId(1L, 1L, true))
+                () -> filmStorage.checkFilmLikeByUserId(1L, 1L, true))
                 .isInstanceOf(
                         ConflictException.class)
                 .hasMessageContaining(
@@ -202,48 +200,48 @@ public class FilmGenreDatabaseTest {
 
         assertThatThrownBy(
                 () ->
-                        dbFilmStorageImpl.checkFilmLikeByUserId(2L, 1L, false))
+                        filmStorage.checkFilmLikeByUserId(2L, 1L, false))
                 .isInstanceOf(
                         NotFoundException.class)
                 .hasMessageContaining(
                         "У фильма с id => 2 не существует лайка пользователя с id => 1");
 
-        dbUserStorageImpl.removeAllUser();
+        userStorage.removeAllUser();
     }
 
     @Test
     public void testGenreCreateCheck() {
 
-        final List<Genre> genres = dbGenreStorage.getGenreList();
+        final List<Genre> genres = genreStorage.getGenreList();
 
         assertThat(genres)
                 .size()
                 .isEqualTo(6);
 
-        dbGenreStorage.createGenre(Genre
+        genreStorage.createGenre(Genre
                 .builder()
                 .name("New genre")
                 .build());
 
         assertThat(
-                dbGenreStorage.getGenreList())
+                genreStorage.getGenreList())
                 .size()
                 .isEqualTo(7);
 
         assertThat(
-                dbGenreStorage.getGenreById(7))
+                genreStorage.getGenreById(7))
                 .hasFieldOrPropertyWithValue(
                         "name", "New genre");
 
 
-        dbGenreStorage.updateGenre(Genre
+        genreStorage.updateGenre(Genre
                 .builder()
                 .id(7)
                 .name("Update genre")
                 .build());
 
         assertThatThrownBy(
-                () -> dbGenreStorage.checkGenre(Genre
+                () -> genreStorage.checkGenre(Genre
                         .builder()
                         .name("Update genre")
                         .build()))
@@ -255,7 +253,7 @@ public class FilmGenreDatabaseTest {
 
         assertThatNoException()
                 .isThrownBy(
-                        () -> dbGenreStorage.checkGenre(
+                        () -> genreStorage.checkGenre(
                                 Genre
                                         .builder()
                                         .name("Some genre")

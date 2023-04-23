@@ -2,7 +2,7 @@ package ru.yandex.practicum.filmorate.storage.film.dao;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-@Repository
+@Repository("filmStorage")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbFilmStorageImpl implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -411,7 +411,7 @@ public class DbFilmStorageImpl implements FilmStorage {
                                     dbMpaStorageImpl::makeMpa,
                                     filmBuilder.getId()));
 
-        } catch (IncorrectResultSizeDataAccessException e) {
+        } catch (EmptyResultDataAccessException e) {
             filmBuilder.setMpa(null);
         }
 

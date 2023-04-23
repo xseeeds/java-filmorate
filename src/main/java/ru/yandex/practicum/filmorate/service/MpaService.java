@@ -16,11 +16,11 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class MpaService {
-    private final MpaStorage dbMpaStorageImpl;
+    private final MpaStorage mpaStorage;
 
 
     public List<Mpa> getMpaList() {
-        List<Mpa> allMpa = dbMpaStorageImpl.getMpaList();
+        List<Mpa> allMpa = mpaStorage.getMpaList();
 
         log.info("Mpa получены (кол-во) => {}", allMpa.size());
 
@@ -30,6 +30,6 @@ public class MpaService {
     public Mpa getMpaById(@Positive int id) {
         log.info("Mpa получен по id => {}", id);
 
-        return dbMpaStorageImpl.getMpaById(id);
+        return mpaStorage.getMpaById(id);
     }
 }
