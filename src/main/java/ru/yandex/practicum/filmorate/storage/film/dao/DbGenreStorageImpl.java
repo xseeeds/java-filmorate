@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage.film.dao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
@@ -17,14 +18,46 @@ import java.util.*;
 
 @Repository
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class DbGenreStorage implements GenreStorage {
+public class DbGenreStorageImpl implements GenreStorage {
     private final JdbcTemplate jdbcTemplate;
+
+    @Override
+    public Genre createGenre(Genre genre) {
+
+        final Map<String, Object> genreFields = new HashMap<>();
+        genreFields.put("name", genre.getName());
+
+        final SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("genres")
+                .usingGeneratedKeyColumns("id");
+
+        final int genreId =  simpleJdbcInsert.executeAndReturnKey(
+                genreFields).intValue();
+
+        genre.setId(genreId);
+
+        return genre;
+    }
+
+    @Override
+    public Genre updateGenre(Genre genre) {
+
+        final String sqlQuery =
+                "UPDATE genres " +
+                        "SET name = ? " +
+                        "WHERE id = ?";
+
+        jdbcTemplate.update(sqlQuery,
+                genre.getName(), genre.getId());
+
+        return genre;
+    }
 
     @Override
     public void addGenreOnFilm(int genreId, long filmId) {
 
         final String sql =
-                "INSERT INTO public.genre " +
+                "INSERT INTO film_genre " +
                         "(film_id, genre_id) " +
                         "VALUES (?, ?)";
 
@@ -36,7 +69,7 @@ public class DbGenreStorage implements GenreStorage {
     public void removeGenreOnFilm(int genreId, long filmId) {
 
         final String sql =
-                "DELETE FROM public.genre " +
+                "DELETE FROM film_genre " +
                         "WHERE genre_id = ? " +
                         "AND film_id = ?";
 
@@ -45,11 +78,36 @@ public class DbGenreStorage implements GenreStorage {
     }
 
     @Override
+    public void checkGenreOnFilm(int genreId, long filmId, boolean addOrRemove) throws NotFoundException, ConflictException {
+
+        final String sql =
+                "SELECT genre_id " +
+                        "FROM film_genre " +
+                        "WHERE genre_id = ?" +
+                        "AND film_id = ?";
+
+        final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
+                genreId, filmId);
+
+        if (addOrRemove) {
+            if (rows.next()) {
+                throw new ConflictException("У фильма с id => " + filmId
+                        + " уже существует жанр с id => " + genreId);
+            }
+        } else {
+            if (!rows.next()) {
+                throw new NotFoundException("У фильма с id => " + filmId
+                        + " не существует жанр с id => " + genreId);
+            }
+        }
+    }
+
+    @Override
     public List<Genre> getGenreList() {
 
         final String sql =
                 "SELECT * " +
-                        "FROM public.genres";
+                        "FROM genres";
 
         return jdbcTemplate.query(sql,
                 this::makeGenre);
@@ -57,11 +115,11 @@ public class DbGenreStorage implements GenreStorage {
     }
 
     @Override
-    public Genre getGenreById(int id) {
+    public Genre getGenreById(int id) throws NotFoundException {
 
         final String sql =
                 "SELECT name" +
-                        " FROM public.genres" +
+                        " FROM genres" +
                         " WHERE id = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -79,11 +137,11 @@ public class DbGenreStorage implements GenreStorage {
     }
 
     @Override
-    public void checkGenreById(int id) {
+    public void checkGenreById(int id) throws NotFoundException {
 
         final String sql =
                 "SELECT id" +
-                        " FROM public.genres" +
+                        " FROM genres" +
                         " WHERE id = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -95,7 +153,7 @@ public class DbGenreStorage implements GenreStorage {
     }
 
     @Override
-    public void checkGenre(Genre genre) {
+    public void checkGenre(Genre genre) throws NotFoundException {
 
         final boolean newGenre = (genre.getId() == null);
 
@@ -105,13 +163,13 @@ public class DbGenreStorage implements GenreStorage {
         if (newGenre) {
             sql =
                     "SELECT id " +
-                            "FROM public.genres " +
+                            "FROM genres " +
                             "WHERE name = ?";
             params = new Object[]{genre.getName()};
         } else {
             sql =
                     "SELECT id " +
-                            "FROM public.genres " +
+                            "FROM genres " +
                             "WHERE name = ? " +
                             "AND id <> ?";
             params = new Object[]{genre.getName(), genre.getId()};
@@ -128,7 +186,7 @@ public class DbGenreStorage implements GenreStorage {
     @Override
     public void removeGenreById(int id) {
         jdbcTemplate.update(
-                "DELETE FROM public.genres " +
+                "DELETE FROM genres " +
                 "WHERE id = ?",
                 id);
     }
@@ -136,7 +194,7 @@ public class DbGenreStorage implements GenreStorage {
     @Override
     public void removeAllGenre() {
         jdbcTemplate.update(
-                "DELETE FROM public.genres");
+                "DELETE FROM genres");
     }
 
     @Override
@@ -150,28 +208,4 @@ public class DbGenreStorage implements GenreStorage {
 
     }
 
-    @Override
-    public void checkGenreOnFilm(int genreId, long filmId, boolean addOrRemove) {
-
-        final String sql =
-                "SELECT genre_id " +
-                        "FROM public.genre " +
-                        "WHERE genre_id = ?" +
-                        "AND film_id =?";
-
-        final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
-                genreId, filmId);
-
-        if (addOrRemove) {
-            if (rows.next()) {
-                throw new ConflictException("У фильма с id => " + filmId
-                        + " уже существует жанр с id => " + genreId);
-            }
-        } else {
-            if (!rows.next()) {
-                throw new NotFoundException("У фильма с id => " + filmId
-                        + " не существует жанр с id => " + genreId);
-            }
-        }
-    }
 }

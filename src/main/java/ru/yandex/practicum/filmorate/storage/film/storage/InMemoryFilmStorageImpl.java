@@ -16,15 +16,39 @@ import static java.util.stream.Collectors.toList;
 @Component
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class InMemoryFilmStorageImpl implements FilmStorage {
-    private final FilmStorage.OnCreate inMemoryFilmStorageImplOnCreate;
-
-    protected static final TreeSet<Film> films = new TreeSet<>(Comparator
+    private final TreeSet<Film> films = new TreeSet<>(Comparator
             .comparing(Film::getLikesSize)
             .thenComparing(Film::getName)
             .thenComparing(Film::getReleaseDate)
             .thenComparing(Film::getDuration));
-    protected static final TreeSet<Long> idsFilms = new TreeSet<>();
+    private final TreeSet<Long> idsFilms = new TreeSet<>();
+    private long globalId = 0;
 
+    @Override
+    public Film createFilm(Film film) {
+        film.setId(getNextId());
+        films.add(film);
+        idsFilms.add(film.getId());
+        return film;
+    }
+
+    @Override
+    public void resetGlobalId() {
+        globalId = 0;
+    }
+
+    @Override
+    public Film updateFilm(Film film) {
+        Optional<Film> oldFilm = films
+                .stream()
+                .filter(f -> f.getId().equals(film.getId()))
+                .findFirst();
+        if (oldFilm.isPresent()) {
+            films.remove(oldFilm.get());
+            films.add(film);
+        }
+        return film;
+    }
 
     @Override
     public Film getFilmById(long filmId) {
@@ -44,7 +68,6 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     public Collection<Film> getFilmByPopular(int count) {
         return films
                 .stream()
-                //.sorted(this::filmCompareByLikes)
                 .limit(count)
                 .collect(toList());
     }
@@ -64,7 +87,7 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     public void removeAllFilm() {
         films.clear();
         idsFilms.clear();
-        inMemoryFilmStorageImplOnCreate.resetGlobalId();
+        resetGlobalId();
     }
 
     @Override
@@ -97,14 +120,14 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
 
         if (addOrRemove) {
 
-            if (film.getLikes().contains(userId)) {
+            if (film.getUserFilmLike().contains(userId)) {
                 throw new ConflictException("У фильма с id => " + film.getId()
                         + " уже существует лайк пользователя с id => " + userId);
             }
 
         } else {
 
-            if (!film.getLikes().contains(userId)) {
+            if (!film.getUserFilmLike().contains(userId)) {
                 throw new NotFoundException("У фильма с id => " + film.getId()
                         + " не существует лайка пользователя с id => " + userId);
             }
@@ -113,25 +136,15 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
 
     @Override
     public void addUserLikeOnFilm(long filmId, long userId) {
-        getFilmById(filmId).getLikes().add(userId);
+        getFilmById(filmId).getUserFilmLike().add(userId);
     }
 
     @Override
     public void removeUserLikeOnFilm(long filmId, long userId) {
-        getFilmById(filmId).getLikes().remove(userId);
+        getFilmById(filmId).getUserFilmLike().remove(userId);
     }
 
-/*
-    private Film getFilm(Film film) {
-        Film ceil = films.ceiling(film);
-        Film floor = films.floor(film);
-        return Objects.equals(ceil, floor) ? ceil : null;
+    private long getNextId() {
+        return ++globalId;
     }
-*/
-
-/*
-    private int filmCompareByLikes(Film f0, Film f1) {
-        return Integer.compare(f1.getLikes().size(), f0.getLikes().size());
-    }
-*/
 }

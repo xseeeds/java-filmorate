@@ -27,16 +27,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class FilmGenreDatabaseTests {
+public class FilmGenreDatabaseTest {
     private final FilmStorage dbFilmStorageImpl;
-    private final FilmStorage.OnCreate dbFilmStorageImplOnCreate;
-    private final FilmStorage.OnUpdate dbFilmStorageImplOnUpdate;
 
-    private final UserStorage.OnCreate dbUserStorageImplOnCreate;
+    private final UserStorage dbUserStorageImpl;
 
     private final GenreStorage dbGenreStorage;
-    private final GenreStorage.OnCreate dbGenreStorageOnCreate;
-    private final GenreStorage.OnUpdate dbGenreStorageOnUpdate;
+
 
     @AfterEach
     public void ternDown() {
@@ -67,14 +64,14 @@ public class FilmGenreDatabaseTests {
                 .size()
                 .isZero();
 
-        dbFilmStorageImplOnCreate.createFilm(
+        dbFilmStorageImpl.createFilm(
                 Film
                         .builder()
                         .name("The Shawshank Redemption")
                         .description("Nominated for 7 Oscars")
                         .releaseDate(LocalDate.of(1994, 9, 22))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).name("G").build())
+                        .mpa(Mpa.builder().id(1).build())
                         .build());
 
         final Film film1 = dbFilmStorageImpl.getFilmById(1L);
@@ -90,7 +87,7 @@ public class FilmGenreDatabaseTests {
 
         film1.setRate((float) 5);
 
-        dbFilmStorageImplOnUpdate.updateFilm(film1);
+        dbFilmStorageImpl.updateFilm(film1);
 
         assertThat(
                 film1)
@@ -109,14 +106,14 @@ public class FilmGenreDatabaseTests {
     @Test
     public void testCheckFilmByNameReleaseDateDuration() {
 
-        dbFilmStorageImplOnCreate.createFilm(
+        dbFilmStorageImpl.createFilm(
                 Film
                         .builder()
                         .name("The Shawshank Redemption")
                         .description("Nominated for 7 Oscars")
                         .releaseDate(LocalDate.of(1994, 9, 22))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).name("G").build())
+                        .mpa(Mpa.builder().id(1).build())
                         .build());
 
         assertThatThrownBy(
@@ -127,7 +124,7 @@ public class FilmGenreDatabaseTests {
                                 .description("Nominated for 7 Oscars")
                                 .releaseDate(LocalDate.of(1994, 9, 22))
                                 .duration(144)
-                                .mpa(Mpa.builder().id(1).name("G").build())
+                                .mpa(Mpa.builder().id(1).build())
                                 .build()))
                 .isInstanceOf(
                         ConflictException.class)
@@ -138,27 +135,27 @@ public class FilmGenreDatabaseTests {
     @Test
     public void testAddAndRemoveUserLikeOnFilm() {
 
-        dbFilmStorageImplOnCreate.createFilm(
+        dbFilmStorageImpl.createFilm(
                 Film
                         .builder()
                         .name("The Shawshank Redemption")
                         .description("Nominated for 7 Oscars")
                         .releaseDate(LocalDate.of(1994, 9, 22))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).name("G").build())
+                        .mpa(Mpa.builder().id(1).build())
                         .build());
 
-        dbFilmStorageImplOnCreate.createFilm(
+        dbFilmStorageImpl.createFilm(
                 Film
                         .builder()
                         .name("The Godfather")
                         .description("Won 3 Oscars")
                         .releaseDate(LocalDate.of(1972, 3, 17))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).name("G").build())
+                        .mpa(Mpa.builder().id(1).build())
                         .build());
 
-        dbUserStorageImplOnCreate.createUser(
+        dbUserStorageImpl.createUser(
                 User
                         .builder()
                         .name("John")
@@ -211,6 +208,7 @@ public class FilmGenreDatabaseTests {
                 .hasMessageContaining(
                         "У фильма с id => 2 не существует лайка пользователя с id => 1");
 
+        dbUserStorageImpl.removeAllUser();
     }
 
     @Test
@@ -222,7 +220,7 @@ public class FilmGenreDatabaseTests {
                 .size()
                 .isEqualTo(6);
 
-        dbGenreStorageOnCreate.createGenre(Genre
+        dbGenreStorage.createGenre(Genre
                 .builder()
                 .name("New genre")
                 .build());
@@ -238,7 +236,7 @@ public class FilmGenreDatabaseTests {
                         "name", "New genre");
 
 
-        dbGenreStorageOnUpdate.updateGenre(Genre
+        dbGenreStorage.updateGenre(Genre
                 .builder()
                 .id(7)
                 .name("Update genre")

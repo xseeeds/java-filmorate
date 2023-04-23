@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -25,11 +26,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmControllerTest {
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
     private final FilmService filmService;
+
 
     private final Film film1 = Film
             .builder()
@@ -458,7 +461,7 @@ public class FilmControllerTest {
         mockMvc.perform(get("/films/2"))
                 .andExpect(status()
                         .isOk())
-                .andExpect(jsonPath("$.likes[0]")
+                .andExpect(jsonPath("$.userFilmLike[0]")
                         .value("1"));
 
         mockMvc.perform(put("/films/2/like/1"))
@@ -483,7 +486,7 @@ public class FilmControllerTest {
         mockMvc.perform(get("/films/2"))
                 .andExpect(status()
                         .isOk())
-                .andExpect(jsonPath("$.likes")
+                .andExpect(jsonPath("$.userFilmLike")
                         .isEmpty());
 
         mockMvc.perform(delete("/users"));
@@ -519,36 +522,3 @@ public class FilmControllerTest {
                 .andExpect(status().isOk());
     }
 }
-/*
-    Для проверки списка пользователей можно воспользоваться методом `jsonPath`
-    и перебрать каждый элемент списка. Например:
-
-        ```
-        mockMvc.perform(get("/users"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$[0].name").value("John"))
-        .andExpect(jsonPath("$[1].name").value("Mary"))
-        .andExpect(jsonPath("$[2].name").value("Bob"))
-        // и т.д.
-        ```
-
-        Здесь `"$[0].name"` означает "название поля `name` у первого элемента списка".
-         Если нужно проверить все элементы списка, можно использовать структуру `$.[*].name`.
-
-        Если список содержит переменное количество элементов, то можно использовать `*.name`,
-         например:
-
-        ```
-        mockMvc.perform(get("/users"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$[*].name").value(hasItem("John")))
-        .andExpect(jsonPath("$[*].name").value(hasItem("Mary")))
-        .andExpect(jsonPath("$[*].name").value(hasItem("Bob")))
-        // и т.д.
-        ```
-
-        Здесь `hasItem` - это метод из библиотеки Hamcrest, который позволяет проверять,
-         есть ли в списке элемент с заданным значением.
-*/

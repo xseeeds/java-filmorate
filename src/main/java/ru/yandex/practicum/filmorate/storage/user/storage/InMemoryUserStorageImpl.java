@@ -13,16 +13,73 @@ import java.util.Collection;
 import java.util.TreeMap;
 
 import static java.util.stream.Collectors.toList;
+import static ru.yandex.practicum.filmorate.model.Status.FRIENDSHIP;
+import static ru.yandex.practicum.filmorate.model.Status.SUBSCRIPTION;
 
 
 @Component
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class InMemoryUserStorageImpl implements UserStorage {
-    private final UserStorage.OnCreate inMemoryUserStorageImplOnCreate;
-    protected static final TreeMap<Long, User> users = new TreeMap<>();
-    protected static final TreeMap<String, Long> userEmails = new TreeMap<>();
-    protected static final TreeMap<String, Long> userLogins = new TreeMap<>();
+    private final TreeMap<Long, User> users = new TreeMap<>();
+    private final TreeMap<String, Long> userEmails = new TreeMap<>();
+    private final TreeMap<String, Long> userLogins = new TreeMap<>();
+    private long globalId = 0;
 
+    @Override
+    public User createUser(User user) {
+
+        final User userBuilder;
+
+        if (user.getName() == null || user.getName().isBlank()) {
+            userBuilder = user
+                    .toBuilder()
+                    .name(user.getLogin())
+                    .id(getNextId())
+                    .build();
+        } else {
+            userBuilder = user
+                    .toBuilder()
+                    .id(getNextId())
+                    .build();
+        }
+
+        users.put(userBuilder.getId(), userBuilder);
+        userEmails.put(userBuilder.getEmail(), userBuilder.getId());
+        userLogins.put(userBuilder.getLogin(), userBuilder.getId());
+
+        return userBuilder;
+    }
+
+    @Override
+    public void resetGlobalId() {
+        globalId = 0;
+    }
+
+    @Override
+    public User updateUser(User user) {
+
+        final User oldUser = users.get(user.getId());
+        userEmails.remove(oldUser.getEmail());
+        userLogins.remove(oldUser.getLogin());
+
+        if (user.getName() == null) {
+            final User userBuilder = user
+                    .toBuilder()
+                    .name(user.getLogin())
+                    .build();
+            users.put(userBuilder.getId(), userBuilder);
+            userEmails.put(userBuilder.getEmail(), userBuilder.getId());
+            userLogins.put(userBuilder.getLogin(), userBuilder.getId());
+
+            return userBuilder;
+        }
+
+        users.put(user.getId(), user);
+        userEmails.put(user.getEmail(), user.getId());
+        userLogins.put(user.getLogin(), user.getId());
+
+        return user;
+    }
 
     @Override
     public User getUserById(long userId) {
@@ -48,7 +105,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         users.clear();
         userLogins.clear();
         userEmails.clear();
-        inMemoryUserStorageImplOnCreate.resetGlobalId();
+        resetGlobalId();
 
     }
 
@@ -56,6 +113,11 @@ public class InMemoryUserStorageImpl implements UserStorage {
     public void removeUserById(long userId) {
 
         final User user = users.remove(userId);
+
+        if (user == null) {
+            throw new NotFoundException("Такой пользователь c id => " + userId + " не существует");
+        }
+
         userLogins.remove(user.getLogin());
         userEmails.remove(user.getEmail());
     }
@@ -67,7 +129,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
 
         if (addOrRemove) {
 
-            if (user.getFriendsIdsStatus().containsKey(otherId) && user.getFriendsIdsStatus().get(otherId) == Status.FRIENDSHIP) {
+            if (user.getFriendsIdsStatus().containsKey(otherId) && user.getFriendsIdsStatus().get(otherId) == FRIENDSHIP) {
                 throw new ConflictException("У пользователя с id => " + user.getId()
                         + " уже существует дружба с id => " + otherId);
             }
@@ -82,22 +144,22 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public void checkFriendByUserId(long userId) throws ConflictException {
+    public void checkFriendByUserId(long userId) throws NotFoundException {
 
         final User user = users.get(userId);
 
         if (user != null && user.getFriendsIdsStatus().isEmpty()) {
-            throw new ConflictException("У пользователя с id => " + user.getId() + " нет друзей");
+            throw new NotFoundException("У пользователя с id => " + user.getId() + " нет друзей");
         }
     }
 
     @Override
-    public void checkUserByFriendId(long otherId) throws ConflictException {
+    public void checkUserByFriendId(long otherId) throws NotFoundException {
 
         final User user = users.get(otherId);
 
         if (user != null && user.getFriendsIdsStatus().isEmpty()) {
-            throw new ConflictException("У пользователя с id => " + user.getId() + " нет друзей");
+            throw new NotFoundException("У пользователя с id => " + user.getId() + " нет друзей");
         }
     }
 
@@ -112,6 +174,20 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
+    public boolean checkStatusFriendship(long userId, long otherId, Status status) {
+
+        final User user = users.get(userId);
+
+        return user.getFriendsIdsStatus().containsKey(otherId)
+                && user.getFriendsIdsStatus().get(otherId).equals(status);
+    }
+
+    @Override
+    public boolean checkFriendship(long userId, long otherId) {
+        return users.get(userId).getFriendsIdsStatus().containsKey(otherId);
+    }
+
+    @Override
     public void removeFriend(long userId, long otherId) {
         users.get(userId).getFriendsIdsStatus().remove(otherId);
     }
@@ -123,9 +199,9 @@ public class InMemoryUserStorageImpl implements UserStorage {
                 .getFriendsIdsStatus()
                 .entrySet()
                 .stream()
-                .filter(entry -> entry.getValue().equals(Status.FRIENDSHIP))
-                .map(entry -> users.get(
-                        entry.getKey()))
+                .filter(entry -> entry.getValue().equals(FRIENDSHIP)
+                        || entry.getValue().equals(SUBSCRIPTION))
+                .map(entry -> users.get(entry.getKey()))
                 .collect(toList());
     }
 
@@ -137,9 +213,10 @@ public class InMemoryUserStorageImpl implements UserStorage {
                 .entrySet()
                 .stream()
                 .filter(entry -> users.get(otherUserId).getFriendsIdsStatus().containsKey(entry.getKey())
-                        && entry.getValue().equals(Status.FRIENDSHIP))
-                .map(entry -> users.get(
-                        entry.getKey()))
+                        && entry.getValue().equals(FRIENDSHIP)
+                        || users.get(otherUserId).getFriendsIdsStatus().containsKey(entry.getKey())
+                        && entry.getValue().equals(SUBSCRIPTION))
+                .map(entry -> users.get(entry.getKey()))
                 .collect(toList());
     }
 
@@ -194,5 +271,9 @@ public class InMemoryUserStorageImpl implements UserStorage {
             throw new ConflictException("Такой пользователь с email: " + updateUserEmail
                     + " уже существует, по id => " + existentId);
         }
+    }
+
+    private long getNextId() {
+        return ++globalId;
     }
 }

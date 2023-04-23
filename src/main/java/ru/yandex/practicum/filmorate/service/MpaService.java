@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.service;
 
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +16,11 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class MpaService {
-    private final MpaStorage dbMpaStorage;
+    private final MpaStorage dbMpaStorageImpl;
+
 
     public List<Mpa> getMpaList() {
-        List<Mpa> allMpa = dbMpaStorage.getMpaList();
+        List<Mpa> allMpa = dbMpaStorageImpl.getMpaList();
 
         log.info("Mpa получены (кол-во) => {}", allMpa.size());
 
@@ -30,6 +30,6 @@ public class MpaService {
     public Mpa getMpaById(@Positive int id) {
         log.info("Mpa получен по id => {}", id);
 
-        return dbMpaStorage.getMpaById(id);
+        return dbMpaStorageImpl.getMpaById(id);
     }
 }

@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage.user.dao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
@@ -16,11 +17,96 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 @Repository
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbUserStorageImpl implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+
+    @Override
+    public User createUser(User user) {
+        User userBuilder;
+        if (user.getName() == null || user.getName().isBlank()) {
+            userBuilder = user
+                    .toBuilder()
+                    .name(user.getLogin())
+                    .build();
+        } else {
+            userBuilder = user
+                    .toBuilder()
+                    .build();
+        }
+
+        final HashMap<String, Object> userToMap = new HashMap<>();
+
+        userToMap.put("email", userBuilder.getEmail());
+        userToMap.put("login", userBuilder.getLogin());
+        userToMap.put("name", userBuilder.getName());
+        userToMap.put("birthday", userBuilder.getBirthday());
+
+        final SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("users")
+                .usingGeneratedKeyColumns("id");
+
+        final long id = simpleJdbcInsert.executeAndReturnKey(userToMap).longValue();
+
+        return userBuilder
+                .toBuilder()
+                .id(id)
+                .build();
+    }
+
+    @Override
+    public void resetGlobalId() {
+        jdbcTemplate.update(
+                "ALTER TABLE users " +
+                        "ALTER COLUMN id " +
+                        "RESTART WITH 1");
+    }
+
+    @Override
+    public User updateUser(User user) {
+
+        final User userBuilder;
+
+        if (user.getName() == null) {
+            userBuilder = user
+                    .toBuilder()
+                    .name(user.getLogin())
+                    .build();
+
+        } else {
+            userBuilder = user.toBuilder().build();
+        }
+
+        final String sqlUpdateUser =
+                "UPDATE users " +
+                        "SET email = ?, login = ?, name = ?, birthday = ? " +
+                        "WHERE id = ?";
+
+        jdbcTemplate.update(sqlUpdateUser,
+                userBuilder.getEmail(),
+                userBuilder.getLogin(),
+                userBuilder.getName(),
+                userBuilder.getBirthday(),
+                userBuilder.getId());
+
+        if (!userBuilder.getFriendsIdsStatus().isEmpty()) {
+
+            jdbcTemplate.update(
+                    "DELETE FROM friendship " +
+                            "WHERE user_id = ?",
+                    userBuilder.getId());
+
+            userBuilder.getFriendsIdsStatus().forEach(
+                    (friend_id, status) -> jdbcTemplate.update(
+                            "INSERT INTO friendship " +
+                                    "(user_id, friend_id, status) " +
+                                    "VALUES (?, ?, ?)",
+                            userBuilder.getId(), friend_id, status.toString()));
+        }
+
+        return userBuilder;
+    }
 
     @Override
     public User getUserById(long userId) {
@@ -29,11 +115,11 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT * " +
-                        "FROM public.users " +
+                        "FROM users " +
                         "WHERE id = ?";
 
         return jdbcTemplate.queryForObject(sql,
-        this::makeUser,
+                this::makeUser,
                 userId);
     }
 
@@ -42,7 +128,7 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT * " +
-                        "FROM public.users";
+                        "FROM users";
 
         return jdbcTemplate.query(sql,
                 this::makeUser);
@@ -52,15 +138,15 @@ public class DbUserStorageImpl implements UserStorage {
     public void removeAllUser() {
 
         jdbcTemplate.update(
-                "DELETE FROM public.\"LIKE\"");
+                "DELETE FROM user_film_like");
 
         jdbcTemplate.update(
-                "DELETE FROM public.friend");
+                "DELETE FROM friendship");
 
         jdbcTemplate.update(
-                "DELETE FROM public.users");
+                "DELETE FROM users");
         jdbcTemplate.update(
-                "ALTER TABLE public.users " +
+                "ALTER TABLE users " +
                         "ALTER COLUMN id " +
                         "RESTART WITH 1");
     }
@@ -71,7 +157,7 @@ public class DbUserStorageImpl implements UserStorage {
         checkUserById(userId);
 
         jdbcTemplate.update(
-                "DELETE FROM public.users " +
+                "DELETE FROM users " +
                         "WHERE id = ?",
                 userId);
     }
@@ -81,8 +167,8 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT status " +
-                        "FROM public.friend " +
-                        "WHERE user_id = ?" +
+                        "FROM friendship " +
+                        "WHERE user_id = ? " +
                         "AND friend_id =?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -103,36 +189,36 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public void checkFriendByUserId(long userId) throws ConflictException {
+    public void checkFriendByUserId(long userId) throws NotFoundException {
 
         final String sql =
                 "SELECT friend_id " +
-                        "FROM public.friend " +
-                        "WHERE user_id = ?" +
+                        "FROM friendship " +
+                        "WHERE user_id = ? " +
                         "LIMIT 1";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
                 userId);
 
         if (!rows.next()) {
-            throw new ConflictException("У пользователя с id => " + userId + " нет друзей");
+            throw new NotFoundException("У пользователя с id => " + userId + " нет друзей");
         }
     }
 
     @Override
-    public void checkUserByFriendId(long otherId) throws ConflictException {
+    public void checkUserByFriendId(long otherId) throws NotFoundException {
 
         final String sql =
                 "SELECT user_id " +
-                        "FROM public.friend " +
-                        "WHERE friend_id = ?" +
+                        "FROM friendship " +
+                        "WHERE friend_id = ? " +
                         "LIMIT 1";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
                 otherId);
 
         if (!rows.next()) {
-            throw new ConflictException("У пользователя с id => " + otherId + " нет друзей");
+            throw new NotFoundException("У пользователя с id => " + otherId + " нет друзей");
         }
     }
 
@@ -140,7 +226,7 @@ public class DbUserStorageImpl implements UserStorage {
     public void addFriend(long userId, long otherId, Status status) {
 
         jdbcTemplate.update(
-                "INSERT INTO public.friend " +
+                "INSERT INTO friendship " +
                         "(user_id, friend_id, status) " +
                         "VALUES (?, ?, ?)",
                 userId, otherId, status.toString());
@@ -149,7 +235,7 @@ public class DbUserStorageImpl implements UserStorage {
     @Override
     public void updateStatusFriendShip(long userId, long otherId, Status status) {
         jdbcTemplate.update(
-                "UPDATE public.friend " +
+                "UPDATE friendship " +
                         "SET status = ? " +
                         "WHERE user_id = ? " +
                         "AND friend_id = ? " +
@@ -158,9 +244,36 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
+    public boolean checkStatusFriendship(long userId, long otherId, Status status) {
+
+        final SqlRowSet rows = jdbcTemplate.queryForRowSet(
+                "SELECT user_id " +
+                        "FROM friendship " +
+                        "WHERE user_id = ? " +
+                        "AND friend_id = ? " +
+                        "AND status = ?",
+                userId, otherId, status.toString());
+
+        return rows.next();
+    }
+
+    @Override
+    public boolean checkFriendship(long userId, long otherId) {
+
+        final SqlRowSet rows = jdbcTemplate.queryForRowSet(
+                "SELECT user_id " +
+                        "FROM friendship " +
+                        "WHERE user_id = ? " +
+                        "AND friend_id = ?",
+                userId, otherId);
+
+        return rows.next();
+    }
+
+    @Override
     public void removeFriend(long userId, long otherId) {
         jdbcTemplate.update(
-                "DELETE FROM public.friend " +
+                "DELETE FROM friendship " +
                         "WHERE user_id = ? " +
                         "AND friend_id = ?",
                 userId, otherId);
@@ -170,11 +283,12 @@ public class DbUserStorageImpl implements UserStorage {
     public Collection<User> getAllFriendsByUserId(long userId) {
 
         final String sql =
-                "SELECT public.users.id, public.users.email, public.users.login, public.users.name, public.users.birthday " +
-                        "FROM public.users " +
-                        "JOIN public.friend ON public.users.id = public.friend.friend_id " +
-                        "WHERE public.friend.user_id = ?" +
-                        "AND status LIKE 'FRIENDSHIP'";
+                "SELECT users.id, users.email, users.login, users.name, users.birthday " +
+                        "FROM users " +
+                        "JOIN friendship ON users.id = friendship.friend_id " +
+                        "WHERE friendship.user_id = ? " +
+                        "AND (status LIKE 'FRIENDSHIP'" +
+                        "OR status LIKE 'SUBSCRIPTION')";
 
         return jdbcTemplate.query(sql,
                 this::makeUser,
@@ -185,11 +299,13 @@ public class DbUserStorageImpl implements UserStorage {
     public Collection<User> getCommonFriendsByUser(long userId, long otherId) {
 
         final String sql =
-                "SELECT public.users.id, public.users.email, public.users.login, public.users.name, public.users.birthday " +
-                        "FROM public.users " +
-                        "JOIN public.friend AS f1 ON f1.friend_id = public.users.id " +
-                        "JOIN public.friend AS f2 ON f1.friend_id = f2.friend_id " +
-                        "WHERE f1.user_id = ? and f2.user_id = ?";
+                "SELECT users.id, users.email, users.login, users.name, users.birthday " +
+                        "FROM users " +
+                        "JOIN friendship AS fs1 ON fs1.friend_id = users.id " +
+                        "JOIN friendship AS fs2 ON fs1.friend_id = fs2.friend_id " +
+                        "WHERE fs1.user_id = ? AND fs2.user_id = ? " +
+                        "AND (fs2.status LIKE 'FRIENDSHIP' " +
+                        "OR fs2.status LIKE 'SUBSCRIPTION')";
 
         return jdbcTemplate.query(sql,
                 this::makeUser,
@@ -201,7 +317,7 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT id " +
-                        "FROM public.users " +
+                        "FROM users " +
                         "WHERE id = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -217,7 +333,7 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT id " +
-                        "FROM public.users " +
+                        "FROM users " +
                         "WHERE login = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -234,7 +350,7 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT id " +
-                        "FROM public.users " +
+                        "FROM users " +
                         "WHERE email = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -251,7 +367,7 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT id " +
-                        "FROM public.users " +
+                        "FROM users " +
                         "WHERE login = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -272,7 +388,7 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT id " +
-                        "FROM public.users " +
+                        "FROM users " +
                         "WHERE email = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -292,8 +408,8 @@ public class DbUserStorageImpl implements UserStorage {
 
         final String sql =
                 "SELECT friend_id, status " +
-                        "FROM public.friend " +
-                        "WHERE public.friend.user_id = ?";
+                        "FROM friendship " +
+                        "WHERE friendship.user_id = ?";
 
         final User userBuilder = User
                 .builder()

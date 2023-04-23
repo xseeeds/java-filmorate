@@ -7,27 +7,34 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static ru.yandex.practicum.filmorate.model.Status.*;
 
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class UserControllerTest {
     private final MockMvc mockMvc;
@@ -502,24 +509,35 @@ public class UserControllerTest {
                         .json(testUser3WithId));
 
 
-/*
+
         mockMvc.perform(put("/users/1/friends/2"))
+                .andExpect(status()
+                        .isOk());
+        mockMvc.perform(get("/users/1"))
                 .andExpect(status()
                         .isOk())
                 .andExpect(jsonPath("$.friendsIdsStatus.2").value("SUBSCRIPTION"));
+
 
         mockMvc.perform(get("/users/2"))
                 .andExpect(status()
                         .isOk())
                 .andExpect(jsonPath("$.friendsIdsStatus.1").value("APPLICATION"));
 
+
         mockMvc.perform(put("/users/2/friends/1"))
+                .andExpect(status()
+                        .isOk());
+        mockMvc.perform(get("/users/2"))
                 .andExpect(status()
                         .isOk())
                 .andExpect(jsonPath("$.friendsIdsStatus.1").value("FRIENDSHIP"));
 
 
         mockMvc.perform(put("/users/3/friends/1"))
+                .andExpect(status()
+                        .isOk());
+        mockMvc.perform(get("/users/3"))
                 .andExpect(status()
                         .isOk())
                 .andExpect(jsonPath("$.friendsIdsStatus.1").value("SUBSCRIPTION"));
@@ -534,27 +552,28 @@ public class UserControllerTest {
 
         mockMvc.perform(delete("/users/2/friends/1"))
                 .andExpect(status()
+                        .isOk());
+        mockMvc.perform(get("/users/2"))
+                .andExpect(status()
                         .isOk())
-                .andExpect(jsonPath("$.friendsIdsStatus")
-                        .isEmpty());
-
-
+                .andExpect(jsonPath("$.friendsIdsStatus.*").isEmpty());
 
         mockMvc.perform(get("/users/1"))
                 .andExpect(jsonPath("$.friendsIdsStatus.*", hasSize(2)))
                 .andExpect(jsonPath("$.friendsIdsStatus.*", hasItems("SUBSCRIPTION", "APPLICATION")));
 
-
         mockMvc.perform(delete("/users/1/friends/2"))
                 .andExpect(status()
                         .isOk());
+        mockMvc.perform(get("/users/1"))
+                .andExpect(jsonPath("$.friendsIdsStatus.3").value("APPLICATION"));
 
-        mockMvc.perform(delete("/users/1/friends/3"))
+
+        mockMvc.perform(delete("/users/3/friends/1"))
                 .andExpect(status()
-                        .isOk())
-                .andExpect(jsonPath("$.friendsIdsStatus")
-                        .isEmpty());
-*/
+                        .isOk());
+        mockMvc.perform(get("/users/1"))
+                .andExpect(jsonPath("$.friendsIdsStatus.*").isEmpty());
 
         mockMvc.perform(delete("/users/2"))
                 .andExpect(status()
@@ -563,7 +582,6 @@ public class UserControllerTest {
         mockMvc.perform(delete("/users/4"))
                 .andExpect(status()
                         .isNotFound());
-
     }
 
 
@@ -611,31 +629,26 @@ public class UserControllerTest {
         mockMvc.perform(put("/users/1/friends/2"))
                 .andExpect(status()
                         .isOk());
-/*
+
         mockMvc.perform(put("/users/2/friends/1"))
                 .andExpect(status()
                         .isOk());
-*/
+
+        mockMvc.perform(put("/users/2/friends/1"))
+                .andExpect(status()
+                        .isConflict());
+
         mockMvc.perform(put("/users/1/friends/3"))
                 .andExpect(status()
                         .isOk());
-/*
+
         mockMvc.perform(put("/users/3/friends/1"))
                 .andExpect(status()
                         .isOk());
-*/
+
         mockMvc.perform(put("/users/2/friends/3"))
                 .andExpect(status()
                         .isOk());
-/*
-        mockMvc.perform(put("/users/3/friends/2"))
-                .andExpect(status()
-                        .isOk());
-*/
-
-        mockMvc.perform(put("/users/3/friends/2"))
-                .andExpect(status()
-                        .isConflict());
 
 
         String response = mockMvc.perform(get("/users/1/friends"))

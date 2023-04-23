@@ -10,15 +10,11 @@ import java.util.Collection;
 
 public interface UserStorage {
 
-    interface OnCreate {
-        User createUser(User user);
+    User createUser(User user);
 
-        void resetGlobalId();
-    }
+    void resetGlobalId();
 
-    interface OnUpdate {
-        User updateUser(User user);
-    }
+    User updateUser(User user);
 
     User getUserById(long userId);
 
@@ -30,13 +26,17 @@ public interface UserStorage {
 
     void checkUserFriendById(long userId, long otherId, boolean addOrRemove) throws ConflictException, NotFoundException;
 
-    void checkFriendByUserId(long userId) throws ConflictException;
+    void checkFriendByUserId(long userId) throws NotFoundException;
 
-    void checkUserByFriendId(long otherId) throws ConflictException;
+    void checkUserByFriendId(long otherId) throws NotFoundException;
 
     void addFriend(long userId, long otherId, Status status);
 
     void updateStatusFriendShip(long userId, long otherId, Status status);
+
+    boolean checkStatusFriendship(long userId, long otherId, Status status);
+
+    boolean checkFriendship(long userId, long otherId);
 
     void removeFriend(long userId, long otherId);
 

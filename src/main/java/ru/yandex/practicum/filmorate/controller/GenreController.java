@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.BadRequestException;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.service.GenreService;
 
@@ -32,13 +33,19 @@ public class GenreController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public Genre addGenre(@RequestBody Genre genre) {
-        return genreService.addGenre(genre);
+    public Genre createGenre(@RequestBody Genre genre) {
+        if (genre.getId() != null) {
+            throw new BadRequestException("POST request. Для обновления используй PUT запрос, genre имеет id!!!");
+        }
+        return genreService.createGenre(genre);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
     public Genre updateGenre(@RequestBody Genre genre) {
+        if (genre.getId() == null) {
+            throw new BadRequestException("PUT request. Для обновления используй id!!! в теле запроса genre");
+        }
         return genreService.updateGenre(genre);
     }
 
@@ -55,12 +62,12 @@ public class GenreController {
     }
 
     @DeleteMapping
-    public ResponseEntity<String> removeAllFilm() {
+    public ResponseEntity<String> removeAllGenre() {
         return ResponseEntity.ok(genreService.removeAllGenre());
     }
 
     @DeleteMapping("/{genreId}")
-    public ResponseEntity<String> removeFilmById(@PathVariable int genreId) {
+    public ResponseEntity<String> removeGenreById(@PathVariable int genreId) {
         return ResponseEntity.ok(genreService.removeGenreById(genreId));
     }
 }

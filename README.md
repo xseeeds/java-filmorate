@@ -29,42 +29,54 @@ http://localhost:8080/films/popular?count={count}
 
 # Примеры запросов SQL
 #### добавление записи в таблицу USERS:
-INSERT INTO public.users (email, login, name, birthday) VALUES (?, ?, ?, ?)
+INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)
 
 #### обновление данных в таблице USERS:
-UPDATE public.users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?
+UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?
 
 #### добавление записи в таблицу FILMS:
-INSERT INTO public.films (name, description, release_date, duration) values (?, ?, ?, ?)
+INSERT INTO films (name, description, release_date, duration) values (?, ?, ?, ?)
 
 #### обновление данных в таблице FILMS:
-UPDATE public.films SET name = ?, description = ?, duration = ?, release_date = ?, mpa = ? WHERE id = ?
+UPDATE films SET name = ?, description = ?, duration = ?, release_date = ?, mpa_id = ? WHERE id = ?
 
 #### добавление записи в таблицу GENRES:
-INSERT INTO public.genre (name) VALUES (?)
+INSERT INTO genres (name) VALUES (?)
 
-#### добавление записи в таблицу MPA:
-INSERT INTO public.mpa (id, name) VALUES (?, ?)
+#### добавление записи в таблицу MPAS:
+INSERT INTO mpas (id, name) VALUES (?, ?)
 
-#### добавление записи в таблицу FRIEND:
-INSERT INTO friend (user_id, friend_id, status) VALUES (?, ?, ?)
+#### добавление записи в таблицу FRIENDSHIP:
+INSERT INTO friendship (user_id, friend_id, status) VALUES (?, ?, ?)
 
-#### обновление данных в таблице FRIEND:
-UPDATE public.friend SET status = ? WHERE user_id = ? AND friend_id = ? AND user_id <> friend_id
+#### обновление данных в таблице FRIENDSHIP:
+UPDATE friendship SET status = ? WHERE user_id = ? AND friend_id = ? AND user_id <> friend_id
 
-#### добавление записи в таблицу LIKE:
-INSERT INTO public.\"LIKE\" (user_id, film_id) VALUES (?, ?)
+#### добавление записи в таблицу USER_FILM_LIKE:
+INSERT INTO user_film_like (user_id, film_id) VALUES (?, ?)
 
-#### добавление записи в таблицу GENRE:
-INSERT INTO public.genre (film_id, genre_id) VALUES (?, ?)
+#### добавление записи в таблицу FILM_GENRE:
+INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)
+
+#### добавление записи в таблицу FILM_MPA:
+INSERT INTO film_mpa (film_id, mpa_id) VALUES (?, ?)
+
+#### пример выборки данных из таблиц FILMS получение топ фильмов с лимитом выборки:
+SELECT f.id, f.name, f.description, f.duration, f.release_date, f.rate
+FROM films AS f
+LEFT JOIN user_film_like AS ufl ON f.id = ufl.film_id
+GROUP BY f.id
+ORDER BY count(ufl.film_id) DESC
+LIMIT ?
 
 #### пример выборки данных из таблиц USERS и USER_FRIENDS получение общих друзей двух пользователей:
-SELECT public.users.id, public.users.email, public.users.login, public.users.name, public.users.birthday 
-FROM public.users
-JOIN public.friend AS f1 ON f1.friend_id = public.users.id 
-JOIN public.friend AS f2 ON f1.friend_id = f2.friend_id
-WHERE f1.user_id = ? and f2.user_id = ?
-
+SELECT users.id, users.email, users.login, users.name, users.birthday 
+FROM users
+JOIN friendship AS fs1 ON fs1.friend_id = users.id 
+JOIN friendship AS fs2 ON fs1.friend_id = fs2.friend_id
+WHERE fs1.user_id = ? and fs2.user_id = ?
+AND (fs2.status LIKE 'FRIENDSHIP'
+OR fs2.status LIKE 'SUBSCRIPTION')
 
 ## dbdiagram ТЗ10
 #### Ссылка на структуру базы данных для приложения Filmorate: \scr\main\resources\sql\schema.png

@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 
-
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Positive;
@@ -27,32 +26,29 @@ import static ru.yandex.practicum.filmorate.model.Status.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class UserService {
     private final UserStorage dbUserStorageImpl;
-    private final UserStorage.OnCreate dbUserStorageImplOnCreate;
-    private final UserStorage.OnUpdate dbUserStorageImplOnUpdate;
 
 
-    @Validated({UserStorage.OnCreate.class, UserStorage.class})
+    @Validated
     public User createUser(@Valid User createdUser) throws ConflictException {
 
         dbUserStorageImpl.checkUserLogin(createdUser.getLogin());
         dbUserStorageImpl.checkUserEmail(createdUser.getEmail());
 
-        final User user = dbUserStorageImplOnCreate.createUser(createdUser);
+        final User user = dbUserStorageImpl.createUser(createdUser);
 
         log.info("newUser {}", user);
 
         return user;
     }
 
-
-    @Validated({UserStorage.OnUpdate.class, UserStorage.class})
+    @Validated
     public User updateUser(@Valid User updatedUser) throws NotFoundException, ConflictException {
 
         dbUserStorageImpl.checkUserById(updatedUser.getId());
         dbUserStorageImpl.checkUserIdOnLogin(updatedUser.getLogin(), updatedUser.getId());
         dbUserStorageImpl.checkUserIdOnEmail(updatedUser.getEmail(), updatedUser.getId());
 
-        final User user = dbUserStorageImplOnUpdate.updateUser(updatedUser);
+        final User user = dbUserStorageImpl.updateUser(updatedUser);
 
         log.info("Пользователь обновлен {}", user);
 
@@ -95,89 +91,81 @@ public class UserService {
         return "Пользователь c id => " + userId + "удален/удалены все его подписки";
     }
 
-    public User addFriends(@Positive long userId, @Min(-1) long otherId) throws NotFoundException, ConflictException {
+    public void addFriend(@Positive long userId, @Min(-1) long otherId) throws NotFoundException, ConflictException {
 
         dbUserStorageImpl.checkUserById(userId);
         dbUserStorageImpl.checkUserById(otherId);
 
         dbUserStorageImpl.checkUserFriendById(userId, otherId, true);
         dbUserStorageImpl.checkUserFriendById(otherId, userId, true);
-/*
-        final User user = dbUserStorageImpl.getUserById(userId);
 
-        if (user.getFriendsIdsStatus().containsKey(otherId) && user.getFriendsIdsStatus().get(otherId) == Status.APPLICATION) {
+        if (dbUserStorageImpl.checkFriendship(userId, otherId)
+                && dbUserStorageImpl.checkStatusFriendship(userId, otherId, APPLICATION)) {
 
-            dbUserStorageImpl.updateStatusFriendShip(userId, otherId, Status.FRIENDSHIP);
-            dbUserStorageImpl.updateStatusFriendShip(otherId, userId, Status.FRIENDSHIP);
+            dbUserStorageImpl.updateStatusFriendShip(userId, otherId, FRIENDSHIP);
+            dbUserStorageImpl.updateStatusFriendShip(otherId, userId, FRIENDSHIP);
 
-            log.info("User с id => {} подтвердил дружбу c пользователем c id => {}", userId, otherId);
-            return dbUserStorageImpl.getUserById(userId);
+            log.info("User с id => {} подтвердил дружбу c пользователем c id => {} статус {}", userId, otherId, FRIENDSHIP);
+
+        } else {
+
+            dbUserStorageImpl.addFriend(userId, otherId, SUBSCRIPTION);
+            dbUserStorageImpl.addFriend(otherId, userId, APPLICATION);
+
+            log.info("У пользователя с id => {} добавлена заявка от пользователю c id => {} неподтвержденная дружба статус {}", userId, otherId, SUBSCRIPTION);
+            log.info("Подписчик с id => {} добавлен пользователю c id => {} неподтвержденная дружба статус {}", otherId, userId, APPLICATION);
         }
-
-        dbUserStorageImpl.addFriend(userId, otherId, Status.SUBSCRIPTION);
-        dbUserStorageImpl.addFriend(otherId, userId, Status.APPLICATION);
-
-        log.info("Подписчик с id => {} добавлен пользователю c id => {} неподтвержденная дружба", otherId, userId);
-
-        return dbUserStorageImpl.getUserById(userId);
-*/
-        dbUserStorageImpl.addFriend(userId, otherId, FRIENDSHIP);
-
-        log.info("Подписчик с id => {} добавлен пользователю c id => {} неподтвержденная дружба", otherId, userId);
-        return dbUserStorageImpl.getUserById(userId);
     }
 
-
-    public User removeFriends(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
+    public void removeFriend(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
 
         dbUserStorageImpl.checkFriendByUserId(userId);
-        dbUserStorageImpl.checkUserByFriendId(otherId);
-/*
-        final User user = dbUserStorageImpl.getUserById(userId);
-        final User otherUser;
 
         try {
-            otherUser = dbUserStorageImpl.getUserById(otherId);
             dbUserStorageImpl.checkUserFriendById(userId, otherId, false);
+
+            dbUserStorageImpl.checkUserByFriendId(otherId);
 
         } catch (NotFoundException e) {
 
-            if (user.getFriendsIdsStatus().get(otherId) == Status.SUBSCRIPTION || user.getFriendsIdsStatus().get(otherId) == Status.APPLICATION) {
+            if (dbUserStorageImpl.checkStatusFriendship(userId, otherId, SUBSCRIPTION)
+                    || dbUserStorageImpl.checkStatusFriendship(userId, otherId, APPLICATION)) {
 
                 dbUserStorageImpl.removeFriend(userId, otherId);
 
-                log.info(e.getMessage() + " => Подписчик с id => {} удален от пользователя c id => {}", otherId, user);
-                return dbUserStorageImpl.getUserById(userId);
+                log.info(e.getMessage() + " => Подписчик с id => {} удален от пользователя c id => {}", otherId, userId);
+                return;
             }
             throw new NotFoundException(e.getMessage());
         }
 
-        if (user.getFriendsIdsStatus().get(otherId) == Status.SUBSCRIPTION || user.getFriendsIdsStatus().get(otherId) == Status.APPLICATION) {
+        if (dbUserStorageImpl.checkStatusFriendship(userId, otherId, SUBSCRIPTION)
+                || dbUserStorageImpl.checkStatusFriendship(userId, otherId, APPLICATION)) {
 
-            if (otherUser.getFriendsIdsStatus().get(userId) != null && otherUser.getFriendsIdsStatus().get(userId) == Status.APPLICATION) {
+            if (dbUserStorageImpl.checkFriendship(otherId, userId)
+                    && dbUserStorageImpl.checkStatusFriendship(otherId, userId, APPLICATION)) {
 
                 dbUserStorageImpl.removeFriend(otherId, userId);
 
+                log.info("Пользователь с id => {} удалил от пользователя c id => {} заявку", userId, otherId);
             }
 
             dbUserStorageImpl.removeFriend(userId, otherId);
-            log.info("Подписчик с id => {} удален от пользователя c id => {}", otherId, user);
-            return dbUserStorageImpl.getUserById(userId);
+
+            log.info("У пользователя с id => {} удалена подписка/заявка от пользователя c id => {}", userId, otherId);
+
+        } else {
+
+            dbUserStorageImpl.checkUserFriendById(otherId, userId, false);
+
+            dbUserStorageImpl.removeFriend(userId, otherId);
+            dbUserStorageImpl.updateStatusFriendShip(otherId, userId, SUBSCRIPTION);
+
+            log.info("Пользователь с id => {} удален от пользователя c id => {} и оставлен в подписках", otherId, userId);
         }
-
-        dbUserStorageImpl.checkUserFriendById(otherId, userId, false);
-
-        dbUserStorageImpl.removeFriend(userId, otherId);
-        dbUserStorageImpl.updateStatusFriendShip(otherId, userId, Status.SUBSCRIPTION);
-
-        log.info("Friend с id => {} удален от пользователя c id => {} и оставлен в подписках", otherId, user);
-*/
-        dbUserStorageImpl.removeFriend(userId, otherId);
-
-        return dbUserStorageImpl.getUserById(userId);
     }
 
-    public Collection<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException, ConflictException {
+    public Collection<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException {
 
         dbUserStorageImpl.checkUserById(userId);
 
@@ -186,7 +174,7 @@ public class UserService {
         try {
             dbUserStorageImpl.checkFriendByUserId(userId);
 
-        } catch (ConflictException e) {
+        } catch (NotFoundException e) {
 
             log.info(e.getMessage());
 
@@ -212,7 +200,7 @@ public class UserService {
             dbUserStorageImpl.checkFriendByUserId(userId);
             dbUserStorageImpl.checkFriendByUserId(otherId);
 
-        } catch (ConflictException e) {
+        } catch (NotFoundException e) {
 
             log.info(e.getMessage());
 

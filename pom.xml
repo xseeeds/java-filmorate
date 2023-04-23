@@ -13,6 +13,7 @@
     <groupId>ru.yandex.practicum</groupId>
     <artifactId>filmorate</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+
     <name>filmorate</name>
     <description>Demo project for Spring Boot</description>
 
@@ -22,17 +23,6 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.14.2</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -46,22 +36,61 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.15</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+<!--
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+-->
+<!--
+        !- logbook -
+        <dependency>
+            <groupId>org.zalando</groupId>
+            <artifactId>logbook-spring-boot-starter</artifactId>
+            <version>2.16.0</version>
+        </dependency>
+-->
+<!--
+        !- annotations -
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>24.0.1</version>
+        </dependency>
+-->
+<!--
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.14.2</version>
+        </dependency>
+-->
+
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>1.6.15</version>
+        </dependency>
+
+<!--
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -74,29 +103,49 @@
             <scope>runtime</scope>
         </dependency>
 
-<!--
-        Эта ошибка может быть вызвана несколькими причинами:
-
-        1. Не хватает зависимостей - убедитесь, что все необходимые зависимости
-        добавлены в файл pom.xml.
-
-        2. Проблемы с конфигурацией базы данных - проверьте, что данные для подключения
-        к базе данных правильно настроены в файле application.properties или application.yml.
-
-        3. Проблемы с настройками тестовой среды - убедитесь, что тестовая среда настроена
-        правильно и имеет доступ к базе данных.
-
-        4. Проблемы с аннотациями - проверьте, что все аннотации, используемые в тестовом классе,
-        правильно настроены и относятся к тестовой библиотеке JUnit 5.
-
-        При отладке такой ошибки важно проверить все свои зависимости и настройки, чтобы убедиться,
-        что они правильно настроены и соответствуют вашим требованиям.
-        Если ошибка продолжает возникать, попробуйте запустить тестовый класс в более простой среде,
-        чтобы выяснить, где возникает проблема.
--->
-
     </dependencies>
 
+<!--
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+		<pluginRepository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>https://repo.spring.io/snapshot</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</pluginRepository>
+	</pluginRepositories>
+-->
+
+<!--
     <build>
         <plugins>
 
@@ -121,5 +170,6 @@
 
         </plugins>
     </build>
+-->
 
 </project>

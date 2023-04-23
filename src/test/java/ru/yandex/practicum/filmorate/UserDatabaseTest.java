@@ -8,8 +8,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
@@ -17,14 +17,15 @@ import java.util.Collection;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static ru.yandex.practicum.filmorate.model.Status.*;
 
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-class UserDatabaseTests {
+class UserDatabaseTest {
     private final UserStorage dbUserStorageImpl;
-    private final UserStorage.OnCreate dbUserStorageImplOnCreate;
-    private final UserStorage.OnUpdate dbUserStorageImplOnUpdate;
+
+    private final UserService userService;
 
     @AfterEach
     public void ternDown() {
@@ -49,13 +50,13 @@ class UserDatabaseTests {
                         "Такой пользователь c id => 1 не существует");
 
 
-        Collection<User> users = dbUserStorageImpl.getAllUser();
+        final Collection<User> users = dbUserStorageImpl.getAllUser();
 
         assertThat(users)
                 .size()
                 .isZero();
 
-        dbUserStorageImplOnCreate.createUser(
+        dbUserStorageImpl.createUser(
                 User
                         .builder()
                         .name("John Winston Lennon")
@@ -78,7 +79,7 @@ class UserDatabaseTests {
                 .name("John Ono Lennon")
                 .build();
 
-        dbUserStorageImplOnUpdate.updateUser(johnNewName);
+        dbUserStorageImpl.updateUser(johnNewName);
         johnNewName = dbUserStorageImpl.getUserById(1L);
 
         assertThat(
@@ -86,20 +87,19 @@ class UserDatabaseTests {
                 .hasFieldOrPropertyWithValue(
                         "name", "John Ono Lennon");
 
-        Collection<User> allUsers = dbUserStorageImpl.getAllUser();
+        final Collection<User> allUsers = dbUserStorageImpl.getAllUser();
 
         assertThat(
                 allUsers)
                 .size()
-                .isEqualTo(
-                        1);
+                .isEqualTo(1);
 
     }
 
     @Test
     public void testUserCheckLoginAndEmail() {
 
-        dbUserStorageImplOnCreate.createUser(
+        dbUserStorageImpl.createUser(
                 User
                         .builder()
                         .name("John")
@@ -136,7 +136,7 @@ class UserDatabaseTests {
     @Test
     public void testUserFriend() {
 
-        dbUserStorageImplOnCreate.createUser(
+        dbUserStorageImpl.createUser(
                 User
                         .builder()
                         .name("John")
@@ -144,7 +144,7 @@ class UserDatabaseTests {
                         .login("john")
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
-        dbUserStorageImplOnCreate.createUser(
+        dbUserStorageImpl.createUser(
                 User
                         .builder()
                         .name("Paul")
@@ -153,7 +153,7 @@ class UserDatabaseTests {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        dbUserStorageImpl.addFriend(1L, 2L, Status.FRIENDSHIP);
+        dbUserStorageImpl.addFriend(1L, 2L, FRIENDSHIP);
 
 
         assertThat(
@@ -193,5 +193,91 @@ class UserDatabaseTests {
                 .withMessageMatching(
                         "У пользователя с id => 1 не существует друга/заявки/подписки c id => 2");
     }
+
+    @Test
+    public void testFriendship() {
+
+        dbUserStorageImpl.createUser(
+                User
+                        .builder()
+                        .name("John")
+                        .email("john@beatles.uk")
+                        .login("john")
+                        .birthday(LocalDate.of(1940, 10, 9))
+                        .build());
+
+        dbUserStorageImpl.createUser(
+                User
+                        .builder()
+                        .name("Paul")
+                        .email("paul@beatles.uk")
+                        .login("paul")
+                        .birthday(LocalDate.of(1940, 10, 9))
+                        .build());
+
+        dbUserStorageImpl.createUser(
+                User
+                        .builder()
+                        .name("Simon")
+                        .email("simon@beatles.uk")
+                        .login("simon")
+                        .birthday(LocalDate.of(1940, 10, 9))
+                        .build());
+
+
+        userService.addFriend(1, 2);
+
+        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 2, SUBSCRIPTION))
+                .isTrue();
+        assertThat(dbUserStorageImpl.checkStatusFriendship(2, 1, APPLICATION))
+                .isTrue();
+
+        userService.addFriend(2, 1);
+
+        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 2, FRIENDSHIP))
+                .isTrue();
+        assertThat(dbUserStorageImpl.checkStatusFriendship(2, 1, FRIENDSHIP))
+                .isTrue();
+
+        userService.addFriend(3, 1);
+
+        assertThat(dbUserStorageImpl.checkStatusFriendship(3, 1, SUBSCRIPTION))
+                .isTrue();
+        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 3, APPLICATION))
+                .isTrue();
+
+        final Collection<User> allFriends = dbUserStorageImpl.getAllFriendsByUserId(1);
+
+        assertThat(allFriends)
+                .size()
+                .isEqualTo(1);
+
+        final Collection<User> commonFriends = dbUserStorageImpl.getCommonFriendsByUser(2, 3);
+
+        assertThat(commonFriends)
+                .size()
+                .isEqualTo(1);
+
+        userService.removeFriend(2, 1);
+
+        assertThat(dbUserStorageImpl.checkStatusFriendship(1, 2, SUBSCRIPTION))
+                .isTrue();
+        assertThat(dbUserStorageImpl.checkFriendship(2, 1))
+                .isFalse();
+
+        userService.removeFriend(1, 2);
+
+        assertThat(dbUserStorageImpl.checkFriendship(1, 2))
+                .isFalse();
+
+        userService.removeFriend(1, 3);
+
+        assertThat(dbUserStorageImpl.checkFriendship(1, 3))
+                .isFalse();
+        assertThat(dbUserStorageImpl.checkStatusFriendship(3, 1, SUBSCRIPTION))
+                .isTrue();
+    }
+
+
 
 }

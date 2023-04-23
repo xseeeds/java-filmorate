@@ -15,7 +15,7 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class DbMpaStorage implements MpaStorage {
+public class DbMpaStorageImpl implements MpaStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -23,18 +23,18 @@ public class DbMpaStorage implements MpaStorage {
 
         final String sql =
                 "SELECT * " +
-                        "FROM public.mpa";
+                        "FROM mpas";
 
         return jdbcTemplate.query(sql,
                 this::makeMpa);
     }
 
     @Override
-    public Mpa getMpaById(int id) {
+    public Mpa getMpaById(int id) throws NotFoundException {
 
         final String sql =
                 "SELECT name " +
-                        "FROM public.mpa " +
+                        "FROM mpas " +
                         "WHERE id = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,

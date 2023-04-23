@@ -23,30 +23,30 @@ import java.util.Collection;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmService {
     private final FilmStorage dbFilmStorageImpl;
-    private final FilmStorage.OnCreate dbFilmStorageImplOnCreate;
-    private final FilmStorage.OnUpdate dbFilmStorageImplOnUpdate;
+
     private final UserStorage dbUserStorageImpl;
 
-    @Validated({FilmStorage.OnCreate.class, FilmStorage.class})
+
+    @Validated
     public Film createFilm(@Valid Film film) throws ConflictException {
 
         dbFilmStorageImpl.checkFilmByNameReleaseDateDuration(film);
 
-        final Film createdFilm = dbFilmStorageImplOnCreate.createFilm(film);
+        final Film createdFilm = dbFilmStorageImpl.createFilm(film);
 
         log.info("Фильм добавлен => {}", createdFilm);
 
         return createdFilm;
     }
 
-    @Validated({FilmStorage.OnUpdate.class, FilmStorage.class})
+    @Validated
     public Film updateFilm(@Valid Film film) throws NotFoundException, ConflictException {
 
         dbFilmStorageImpl.checkFilmById(film.getId());
 
         dbFilmStorageImpl.checkFilmByNameReleaseDateDuration(film);
 
-        final Film updatedFilm = dbFilmStorageImplOnUpdate.updateFilm(film);
+        final Film updatedFilm = dbFilmStorageImpl.updateFilm(film);
 
         log.info("Фильм обновлен => {}", updatedFilm);
 
@@ -123,13 +123,5 @@ public class FilmService {
 
         return filmByPopular;
     }
-
-
-
-/*
-    private int setRatingFilm(Film film) {
-        return film.getLikes().values().stream().mapToInt(Integer::intValue).sum() / likes.size();
-    }
-*/
 
 }
