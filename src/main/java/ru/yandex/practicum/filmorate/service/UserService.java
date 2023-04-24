@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
@@ -17,7 +17,8 @@ import javax.validation.constraints.Positive;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static java.util.stream.Collectors.toList;
+import static ru.yandex.practicum.filmorate.model.Status.*;
+
 
 @Service
 @Slf4j
@@ -25,35 +26,29 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class UserService {
     private final UserStorage userStorage;
-    private final UserStorage.OnCreate userStorageOnCreate;
-    private final UserStorage.OnUpdate userStorageOnUpdate;
-
-    private User user;
-    private User friend;
 
 
-    @Validated({UserStorage.OnCreate.class, UserStorage.class})
+    @Validated
     public User createUser(@Valid User createdUser) throws ConflictException {
 
-        checkUserLogin(createdUser.getLogin());
-        checkUserEmail(createdUser.getEmail());
+        userStorage.checkUserLogin(createdUser.getLogin());
+        userStorage.checkUserEmail(createdUser.getEmail());
 
-        user = userStorageOnCreate.createUser(createdUser);
+        final User user = userStorage.createUser(createdUser);
 
         log.info("newUser {}", user);
 
         return user;
     }
 
-
-    @Validated({UserStorage.OnUpdate.class, UserStorage.class})
+    @Validated
     public User updateUser(@Valid User updatedUser) throws NotFoundException, ConflictException {
 
-        checkUserById(updatedUser.getId());
-        checkUserIdOnLogin(updatedUser.getLogin(), updatedUser.getId());
-        checkUserIdOnEmail(updatedUser.getEmail(), updatedUser.getId());
+        userStorage.checkUserById(updatedUser.getId());
+        userStorage.checkUserIdOnLogin(updatedUser.getLogin(), updatedUser.getId());
+        userStorage.checkUserIdOnEmail(updatedUser.getEmail(), updatedUser.getId());
 
-        user = userStorageOnUpdate.updateUser(updatedUser);
+        final User user = userStorage.updateUser(updatedUser);
 
         log.info("Пользователь обновлен {}", user);
 
@@ -71,7 +66,7 @@ public class UserService {
 
     public User getUserById(@Positive long userId) throws NotFoundException {
 
-        user = userStorage.getUserById(userId);
+        final User user = userStorage.getUserById(userId);
 
         log.info("Пользователь получен : {}", user);
 
@@ -82,8 +77,6 @@ public class UserService {
 
         userStorage.removeAllUser();
 
-        userStorageOnCreate.resetGlobalId();
-
         log.info("Все пользователи удалены. id сброшен");
 
         return "Все пользователи удалены. id сброшен";
@@ -93,244 +86,132 @@ public class UserService {
 
         userStorage.removeUserById(userId);
 
-        //userStorage.getAllUser().forEach(user -> user.getFriendsIdsStatus().put(userId, Status.SUBSCRIPTION));
+        log.info("Пользователь с id => {} удален/удалены все его подписки", userId);
 
-        //userStorage.getAllUser().forEach(u -> u.getFriendsIdsStatus().remove(userId));
-
-        log.info("Пользователь с id=>{} удален"/*удалены все его подписки"*/, userId);
-
-        return "Пользователь c id=>" + userId + "удален"/*удалены все его подписки"*/;
+        return "Пользователь c id => " + userId + "удален/удалены все его подписки";
     }
 
-    public User addFriends(@Positive long userId, @Min(-1) long friendId) throws NotFoundException, ConflictException {
+    public void addFriend(@Positive long userId, @Min(-1) long otherId) throws NotFoundException, ConflictException {
 
-        user = userStorage.getUserById(userId);
+        userStorage.checkUserById(userId);
+        userStorage.checkUserById(otherId);
 
-        friend = userStorage.getUserById(friendId);
+        userStorage.checkUserFriendById(userId, otherId, true);
+        userStorage.checkUserFriendById(otherId, userId, true);
 
-        checkUserFriendById(user, friendId, true);
-        checkUserFriendById(friend, userId, true);
+        if (userStorage.checkFriendship(userId, otherId)
+                && userStorage.checkStatusFriendship(userId, otherId, APPLICATION)) {
 
-        if (user.getFriendsIdsStatus().containsKey(friendId) && user.getFriendsIdsStatus().get(friendId) == Status.APPLICATION) {
-            user.getFriendsIdsStatus().put(friendId, Status.FRIENDSHIP);
-            friend.getFriendsIdsStatus().put(userId, Status.FRIENDSHIP);
-            userStorageOnUpdate.updateUser(user);
-            userStorageOnUpdate.updateUser(friend);
-            log.info("User с id=>{} подтвердил дружбу c пользователем c id=>{}", userId, friendId);
-            return user;
+            userStorage.updateStatusFriendShip(userId, otherId, FRIENDSHIP);
+            userStorage.updateStatusFriendShip(otherId, userId, FRIENDSHIP);
+
+            log.info("User с id => {} подтвердил дружбу c пользователем c id => {} статус {}", userId, otherId, FRIENDSHIP);
+
+        } else {
+
+            userStorage.addFriend(userId, otherId, SUBSCRIPTION);
+            userStorage.addFriend(otherId, userId, APPLICATION);
+
+            log.info("У пользователя с id => {} добавлена заявка от пользователю c id => {} неподтвержденная дружба статус {}", userId, otherId, SUBSCRIPTION);
+            log.info("Подписчик с id => {} добавлен пользователю c id => {} неподтвержденная дружба статус {}", otherId, userId, APPLICATION);
         }
-
-        user.getFriendsIdsStatus().put(friendId, Status.SUBSCRIPTION);
-        friend.getFriendsIdsStatus().put(userId, Status.APPLICATION);
-
-        userStorageOnUpdate.updateUser(user);
-        userStorageOnUpdate.updateUser(friend);
-
-        log.info("Подписчик с id=>{} добавлен пользователю c id=>{} неподтвержденная дружба", friendId, userId);
-
-        return user;
     }
 
-    public User removeFriends(@Positive long userId, @Positive long friendId) throws NotFoundException, ConflictException {
+    public void removeFriend(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
 
-        user = userStorage.getUserById(userId);
+        userStorage.checkFriendByUserId(userId);
 
         try {
-            friend = userStorage.getUserById(friendId);
-            checkUserFriendById(user, friendId, false);
+            userStorage.checkUserFriendById(userId, otherId, false);
+
+            userStorage.checkUserByFriendId(otherId);
 
         } catch (NotFoundException e) {
 
-            if (user.getFriendsIdsStatus().get(friendId) == Status.SUBSCRIPTION || user.getFriendsIdsStatus().get(friendId) == Status.APPLICATION) {
-                user.getFriendsIdsStatus().remove(friendId);
-                userStorageOnUpdate.updateUser(user);
-                log.info(e.getMessage() + " => Подписчик с id=>{} удален от пользователя c id=>{}", friendId, user);
-                return user;
+            if (userStorage.checkStatusFriendship(userId, otherId, SUBSCRIPTION)
+                    || userStorage.checkStatusFriendship(userId, otherId, APPLICATION)) {
+
+                userStorage.removeFriend(userId, otherId);
+
+                log.info(e.getMessage() + " => Подписчик с id => {} удален от пользователя c id => {}", otherId, userId);
+                return;
             }
             throw new NotFoundException(e.getMessage());
         }
 
-        if (user.getFriendsIdsStatus().get(friendId) == Status.SUBSCRIPTION || user.getFriendsIdsStatus().get(friendId) == Status.APPLICATION) {
+        if (userStorage.checkStatusFriendship(userId, otherId, SUBSCRIPTION)
+                || userStorage.checkStatusFriendship(userId, otherId, APPLICATION)) {
 
-            if (friend.getFriendsIdsStatus().get(userId) != null && friend.getFriendsIdsStatus().get(userId) == Status.APPLICATION) {
-                friend.getFriendsIdsStatus().remove(userId);
-                userStorageOnUpdate.updateUser(friend);
+            if (userStorage.checkFriendship(otherId, userId)
+                    && userStorage.checkStatusFriendship(otherId, userId, APPLICATION)) {
+
+                userStorage.removeFriend(otherId, userId);
+
+                log.info("Пользователь с id => {} удалил от пользователя c id => {} заявку", userId, otherId);
             }
 
-            user.getFriendsIdsStatus().remove(friendId);
-            userStorageOnUpdate.updateUser(user);
-            log.info("Подписчик с id=>{} удален от пользователя c id=>{}", friendId, user);
-            return user;
+            userStorage.removeFriend(userId, otherId);
+
+            log.info("У пользователя с id => {} удалена подписка/заявка от пользователя c id => {}", userId, otherId);
+
+        } else {
+
+            userStorage.checkUserFriendById(otherId, userId, false);
+
+            userStorage.removeFriend(userId, otherId);
+            userStorage.updateStatusFriendShip(otherId, userId, SUBSCRIPTION);
+
+            log.info("Пользователь с id => {} удален от пользователя c id => {} и оставлен в подписках", otherId, userId);
         }
-
-        checkUserFriendById(friend, userId, false);
-
-        user.getFriendsIdsStatus().remove(friendId);
-        friend.getFriendsIdsStatus().put(userId, Status.SUBSCRIPTION);
-
-        userStorageOnUpdate.updateUser(user);
-        userStorageOnUpdate.updateUser(friend);
-
-        log.info("Friend с id=>{} удален от пользователя c id=>{} и оставлен в подписках", friendId, user);
-
-        return user;
     }
 
-    public Collection<User> getFriends(@Positive long userId) throws NotFoundException, ConflictException {
+    public Collection<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException {
 
-        final User user = userStorage.getUserById(userId);
+        userStorage.checkUserById(userId);
 
         Collection<User> allFriends = new ArrayList<>();
 
         try {
-            checkFriendsByUser(user);
+            userStorage.checkFriendByUserId(userId);
 
-        } catch (ConflictException e) {
+        } catch (NotFoundException e) {
 
             log.info(e.getMessage());
 
             return allFriends;
         }
 
-        allFriends = user
-                .getFriendsIdsStatus()
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getValue().equals(Status.FRIENDSHIP))
-                .map(entry -> {
-                    User friend;
-                    try {
-                        friend = userStorage.getUserById(entry.getKey());
+        allFriends = userStorage.getAllFriendsByUserId(userId);
 
-                    } catch (NotFoundException e) {
-
-                        return null;
-                    }
-                    return friend;
-                })
-                .collect(toList());
-
-        log.info("Текущее количество друзей пользователя с id=>{}; =>{}", userId, allFriends.size());
+        log.info("Текущее количество друзей пользователя с id => {}; => {}", userId, allFriends.size());
 
         return allFriends;
     }
 
-    public Collection<User> getCommonFriends(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
+    public Collection<User> getCommonFriendsByUser(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
 
-        final User user = userStorage.getUserById(userId);
+        userStorage.checkUserById(userId);
 
-        final User friend = userStorage.getUserById(otherId);
+        userStorage.checkUserById(otherId);
 
         Collection<User> commonFriends = new ArrayList<>();
 
         try {
-            checkFriendsByUser(user);
-            checkFriendsByUser(friend);
+            userStorage.checkFriendByUserId(userId);
+            userStorage.checkFriendByUserId(otherId);
 
-        } catch (ConflictException e) {
+        } catch (NotFoundException e) {
 
             log.info(e.getMessage());
 
             return commonFriends;
         }
 
-        commonFriends = user
-                .getFriendsIdsStatus()
-                .entrySet()
-                .stream()
-                .filter(entry -> friend.getFriendsIdsStatus().containsKey(entry.getKey())
-                        & entry.getValue().equals(Status.FRIENDSHIP))
-                .map(entry -> {
-                    User commonFriend;
-                    try {
+        commonFriends = userStorage.getCommonFriendsByUser(userId, otherId);
 
-                        commonFriend = userStorage.getUserById(entry.getKey());
-
-                    } catch (NotFoundException e) {
-
-                        return null;
-                    }
-                    return commonFriend;
-                })
-                .collect(toList());
-
-        log.info("Текущее количество общих друзей пользователя с id=>{} и пользователя с id=>{} ===> {}",
+        log.info("Текущее количество общих друзей пользователя с id => {} и пользователя с id => {} ===> {}",
                 userId, otherId, commonFriends.size());
 
         return commonFriends;
-    }
-
-
-    private void checkUserFriendById(User user, long friendId, boolean param) {
-
-        if (param) {
-
-            if (user.getFriendsIdsStatus().containsKey(friendId) && user.getFriendsIdsStatus().get(friendId) == Status.FRIENDSHIP) {
-                throw new ConflictException("У пользователя с id=>" + user.getId()
-                        + " уже существует дружба с id=>" + friendId);
-            }
-
-        } else {
-
-            if (!user.getFriendsIdsStatus().containsKey(friendId)) {
-                throw new NotFoundException("У пользователя с id=>" + user.getId()
-                        + " не существует друга/заявки/подписки c id=>" + friendId);
-            }
-        }
-    }
-
-    private void checkFriendsByUser(User user) {
-
-        if (user.getFriendsIdsStatus().isEmpty()) {
-            throw new ConflictException("У пользователя с id=>" + user.getId() + " еще нет друзей");
-        }
-    }
-
-    public void checkUserById(long userId) {
-
-        if (userStorage.getUserById(userId) == null) {
-            throw new NotFoundException("Такой пользователь c id=>" + userId + " не существует");
-        }
-    }
-
-    public void checkUserLogin(String newUserLogin) {
-
-        final long existentId = userStorage.getIdOnLogin(newUserLogin);
-
-        if (existentId != 0) {
-            throw new ConflictException("Такой пользователь с login: " + newUserLogin
-                    + " уже существует, для обновления используй PUT запрос");
-        }
-    }
-
-    public void checkUserEmail(String newUserEmail) {
-
-        final long existentId = userStorage.getIdOnEmail(newUserEmail);
-
-        if (existentId != 0) {
-            throw new ConflictException("Такой пользователь с email:" + newUserEmail
-                    + " уже существует, по id=> " + existentId + " для обновления используй PUT запрос");
-        }
-    }
-
-    public void checkUserIdOnLogin(String updateUserLogin, long updateUserId) {
-
-        final long existentId = userStorage.getIdOnLogin(updateUserLogin);
-
-        if (existentId != updateUserId & existentId != 0) {
-            throw new ConflictException("Такой пользователь с login: "
-                    + updateUserLogin + " уже существует, по id=>" + existentId);
-        }
-
-    }
-
-    public void checkUserIdOnEmail(String updateUserEmail, long updateUserId) {
-
-        final long existentId = userStorage.getIdOnEmail(updateUserEmail);
-
-        if (existentId != updateUserId & existentId != 0) {
-            throw new ConflictException("Такой пользователь с email: " + updateUserEmail
-                    + " уже существует, по id=>" + existentId);
-        }
     }
 }

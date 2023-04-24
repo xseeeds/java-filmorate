@@ -1,5 +1,8 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
+import ru.yandex.practicum.filmorate.exception.ConflictException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
@@ -7,16 +10,11 @@ import java.util.Collection;
 
 public interface UserStorage {
 
-    interface OnCreate {
-        User createUser(User user);
+    User createUser(User user);
 
-        void resetGlobalId();
-    }
+    void resetGlobalId();
 
-    interface OnUpdate {
-        User updateUser(User user);
-    }
-
+    User updateUser(User user);
 
     User getUserById(long userId);
 
@@ -26,8 +24,34 @@ public interface UserStorage {
 
     void removeUserById(long userId);
 
-    long getIdOnLogin(String userLogin);
+    void checkUserFriendById(long userId, long otherId, boolean addOrRemove) throws ConflictException, NotFoundException;
 
-    long getIdOnEmail(String userEmail);
+    void checkFriendByUserId(long userId) throws NotFoundException;
+
+    void checkUserByFriendId(long otherId) throws NotFoundException;
+
+    void addFriend(long userId, long otherId, Status status);
+
+    void updateStatusFriendShip(long userId, long otherId, Status status);
+
+    boolean checkStatusFriendship(long userId, long otherId, Status status);
+
+    boolean checkFriendship(long userId, long otherId);
+
+    void removeFriend(long userId, long otherId);
+
+    Collection<User> getAllFriendsByUserId(long userId);
+
+    Collection<User> getCommonFriendsByUser(long userId, long otherId);
+
+    void checkUserById(long userId) throws NotFoundException;
+
+    void checkUserLogin(String newUserLogin) throws ConflictException;
+
+    void checkUserEmail(String newUserEmail) throws ConflictException;
+
+    void checkUserIdOnLogin(String updateUserLogin, long updateUserId) throws ConflictException;
+
+    void checkUserIdOnEmail(String updateUserEmail, long updateUserId) throws ConflictException;
 
 }

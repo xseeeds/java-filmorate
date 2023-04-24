@@ -9,13 +9,12 @@ import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Positive;
 import java.util.Collection;
-
-import static java.util.stream.Collectors.toList;
 
 
 @Service
@@ -24,33 +23,31 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final FilmStorage.OnCreate filmStorageOnCreate;
-    private final FilmStorage.OnUpdate filmStorageOnUpdate;
-    private final UserService userService;
+    private final UserStorage userStorage;
 
 
-    @Validated({FilmStorage.OnCreate.class, FilmStorage.class})
+    @Validated
     public Film createFilm(@Valid Film film) throws ConflictException {
 
-        checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDateDuration(film);
 
-        final Film createdFilm = filmStorageOnCreate.createFilm(film);
+        final Film createdFilm = filmStorage.createFilm(film);
 
-        log.info("Фильм добавлен =>{}", createdFilm);
+        log.info("Фильм добавлен => {}", createdFilm);
 
         return createdFilm;
     }
 
-    @Validated({FilmStorage.OnUpdate.class, FilmStorage.class})
+    @Validated
     public Film updateFilm(@Valid Film film) throws NotFoundException, ConflictException {
 
-        checkFilmById(film.getId());
+        filmStorage.checkFilmById(film.getId());
 
-        checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDateDuration(film);
 
-        final Film updatedFilm = filmStorageOnUpdate.updateFilm(film);
+        final Film updatedFilm = filmStorage.updateFilm(film);
 
-        log.info("Фильм обновлен =>{}", updatedFilm);
+        log.info("Фильм обновлен => {}", updatedFilm);
 
         return updatedFilm;
     }
@@ -59,7 +56,7 @@ public class FilmService {
 
         final Collection<Film> allFilm = filmStorage.getAllFilm();
 
-        log.info("Фильм получены (кол-во) =>{}", allFilm.size());
+        log.info("Фильм получены (кол-во) => {}", allFilm.size());
 
         return allFilm;
     }
@@ -68,7 +65,7 @@ public class FilmService {
 
         final Film film = filmStorage.getFilmById(filmId);
 
-        log.info("Фильм получен c id=>{} =>>>{}", filmId, film);
+        log.info("Фильм получен c id => {} =>>> {}", filmId, film);
 
         return film;
     }
@@ -76,8 +73,6 @@ public class FilmService {
     public String removeAllFilm() {
 
         filmStorage.removeAllFilm();
-
-        filmStorageOnCreate.resetGlobalId();
 
         log.info("Все фильмы удалены, id сброшен");
 
@@ -88,107 +83,44 @@ public class FilmService {
 
         filmStorage.removeFilmById(filmId);
 
-        log.info("Фильм c id=>{} удален", filmId);
+        log.info("Фильм c id => {} удален", filmId);
 
-        return "Фильм c id=>" + filmId + "удален";
+        return "Фильм c id => " + filmId + "удален";
     }
 
-    public Film addUserLikeByFilmId(@Positive long filmId, @Positive long userId) throws ConflictException, NotFoundException {
+    public void addUserLikeByFilmId(@Positive long filmId, @Positive long userId) throws ConflictException, NotFoundException {
 
-        final Film film = filmStorage.getFilmById(filmId);
+        filmStorage.checkFilmById(filmId);
 
-        userService.checkUserById(userId);
+        userStorage.checkUserById(userId);
 
-        checkFilmLikeByUserId(film, userId, true);
+        filmStorage.checkFilmLikeByUserId(filmId, userId, true);
 
-        film.getLikes().add(userId);
+        filmStorage.addUserLikeOnFilm(filmId, userId);
 
-        final Film updatedFilm = filmStorageOnUpdate.updateFilm(film);
-
-        log.info("Пользователем c id=>{} добавлен лайк фильму c id=>{}", userId, filmId);
-
-        return updatedFilm;
+        log.info("Пользователем c id => {} добавлен лайк фильму c id => {}", userId, filmId);
     }
 
-    public Film removeUserLikeByFilmId(@Positive long filmId, @Min(-2) long userId) throws ConflictException, NotFoundException {
+    public void removeUserLikeByFilmId(@Positive long filmId, @Min(-2) long userId) throws ConflictException, NotFoundException {
 
-        final Film film = filmStorage.getFilmById(filmId);
+        filmStorage.checkFilmById(filmId);
 
-        userService.checkUserById(userId);
+        userStorage.checkUserById(userId);
 
-        checkFilmLikeByUserId(film, userId, false);
+        filmStorage.checkFilmLikeByUserId(filmId, userId, false);
 
-        film.getLikes().remove(userId);
+        filmStorage.removeUserLikeOnFilm(filmId, userId);
 
-        final Film updatedFilm = filmStorageOnUpdate.updateFilm(film);
-
-        log.info("Пользователем c id=>{} удален лайк у фильма c id=>{}", userId, filmId);
-
-        return updatedFilm;
+        log.info("Пользователем c id => {} удален лайк у фильма c id => {}", userId, filmId);
     }
 
     public Collection<Film> getFilmByPopular(@Positive int count) {
 
-        final Collection<Film> filmByPopular = filmStorage
-                .getAllFilm()
-                .stream()
-                //.sorted(this::filmCompareByLikes)
-                .limit(count)
-                .collect(toList());
+        final Collection<Film> filmByPopular = filmStorage.getFilmByPopular(count);
 
         log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
 
         return filmByPopular;
     }
-
-    private void checkFilmLikeByUserId(Film film, long userId, boolean param) {
-
-        if (param) {
-
-            if (film.getLikes().contains(userId)) {
-                throw new ConflictException("У фильма с id=>" + film.getId()
-                        + " уже существует лайк пользователя с id=>" + userId);
-            }
-
-        } else {
-
-            if (!film.getLikes().contains(userId)) {
-                throw new NotFoundException("У фильма с id=>" + film.getId()
-                        + " не существует лайка пользователя с id=>" + userId);
-            }
-        }
-    }
-
-    private void checkFilmByNameReleaseDateDuration(Film film) {
-
-        final Film existentFilm = filmStorage.getFilm(film);
-
-        if (existentFilm != null) {
-            throw new ConflictException("Такой фильм: " + film
-                    + " уже существует, по id=>" + existentFilm.getId());
-        }
-    }
-
-    private void checkFilmById(long filmId) {
-
-        final Long existentId = filmStorage.getIdExistentFilm(filmId);
-
-        if (existentId == null) {
-            throw new NotFoundException("Такой фильм с id: " + filmId + " не существует");
-        }
-    }
-
-/*
-    private int filmCompareByLikes(Film f0, Film f1) {
-        return Integer.compare(f1.getLikes().size(), f0.getLikes().size());
-    }
-*/
-
-
-/*
-    private int setRatingFilm(Film film) {
-        return film.getLikes().values().stream().mapToInt(Integer::intValue).sum() / likes.size();
-    }
-*/
 
 }
