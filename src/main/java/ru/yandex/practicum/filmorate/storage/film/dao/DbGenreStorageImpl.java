@@ -118,9 +118,9 @@ public class DbGenreStorageImpl implements GenreStorage {
     public Genre getGenreById(int id) throws NotFoundException {
 
         final String sql =
-                "SELECT name" +
-                        " FROM genres" +
-                        " WHERE id = ?";
+                "SELECT name " +
+                        "FROM genres " +
+                        "WHERE id = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
                 id);
@@ -140,9 +140,9 @@ public class DbGenreStorageImpl implements GenreStorage {
     public void checkGenreById(int id) throws NotFoundException {
 
         final String sql =
-                "SELECT id" +
-                        " FROM genres" +
-                        " WHERE id = ?";
+                "SELECT id " +
+                        "FROM genres " +
+                        "WHERE id = ?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
                 id);

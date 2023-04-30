@@ -45,5 +45,8 @@ CREATE TABLE IF NOT EXISTS friendship (
 
 CREATE TABLE IF NOT EXISTS user_film_like (
                                             user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE NO ACTION,
-                                            film_id INT NOT NULL REFERENCES films(id) ON DELETE CASCADE ON UPDATE NO ACTION
+                                            film_id INT NOT NULL REFERENCES films(id) ON DELETE CASCADE ON UPDATE NO ACTION,
+                                            mark INT CHECK (mark >= 1 AND mark <= 10)
 );
+
+CREATE TABLE IF NOT EXISTS director (id INT PRIMARY KEY AUTO_INCREMENT);

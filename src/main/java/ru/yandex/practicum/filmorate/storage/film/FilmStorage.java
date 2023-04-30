@@ -4,7 +4,8 @@ import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.util.Collection;
+import java.util.List;
+
 
 public interface FilmStorage {
 
@@ -16,9 +17,9 @@ public interface FilmStorage {
 
     Film getFilmById(long filmId);
 
-    Collection<Film> getAllFilm();
+    List<Film> getAllFilm();
 
-    Collection<Film> getFilmByPopular(int count);
+    List<Film> getFilmByPopular(int count);
 
     void removeFilmById(long filmId);
 
@@ -30,7 +31,7 @@ public interface FilmStorage {
 
     void checkFilmLikeByUserId(long filmId, long userId, boolean addOrRemove) throws ConflictException, NotFoundException;
 
-    void addUserLikeOnFilm(long filmId, long userId);
+    void addUserLikeOnFilm(long filmId, long userId, int mark);
 
-    void removeUserLikeOnFilm(long filmId, long userId);
+    void removeUserLikeOnFilm(long filmId, long userId, int mark);
 }

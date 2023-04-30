@@ -10,8 +10,11 @@ import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthdayValidator;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 @Data
 @Builder
@@ -42,10 +45,10 @@ public class Film {
 
     private Mpa mpa;
 
-    private final Set<Genre> genres = new HashSet<>();
+    private final List<Genre> genres = new ArrayList<>();
 
-    //TODO TreeMap<Integer, Integer> likes; userId/rate
-    private final Set<Long> userFilmLike = new HashSet<>();
+    //TODO HashMap<Long, Integer> likes; userId/rate
+    private final Map<Long, Integer> userFilmLike = new HashMap<>();
 
     @JsonIgnore
     public int getLikesSize() {

@@ -13,7 +13,7 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.Collection;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -49,7 +49,7 @@ class UserDatabaseTest {
                         "Такой пользователь c id => 1 не существует");
 
 
-        final Collection<User> users = userStorage.getAllUser();
+        final List<User> users = userStorage.getAllUser();
 
         assertThat(users)
                 .size()
@@ -86,7 +86,7 @@ class UserDatabaseTest {
                 .hasFieldOrPropertyWithValue(
                         "name", "John Ono Lennon");
 
-        final Collection<User> allUsers = userStorage.getAllUser();
+        final List<User> allUsers = userStorage.getAllUser();
 
         assertThat(
                 allUsers)
@@ -245,13 +245,13 @@ class UserDatabaseTest {
         assertThat(userStorage.checkStatusFriendship(1, 3, APPLICATION))
                 .isTrue();
 
-        final Collection<User> allFriends = userStorage.getAllFriendsByUserId(1);
+        final List<User> allFriends = userStorage.getAllFriendsByUserId(1);
 
         assertThat(allFriends)
                 .size()
                 .isEqualTo(1);
 
-        final Collection<User> commonFriends = userStorage.getCommonFriendsByUser(2, 3);
+        final List<User> commonFriends = userStorage.getCommonFriendsByUser(2, 3);
 
         assertThat(commonFriends)
                 .size()

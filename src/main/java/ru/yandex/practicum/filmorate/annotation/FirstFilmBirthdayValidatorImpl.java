@@ -5,7 +5,7 @@ import javax.validation.ConstraintValidatorContext;
 import java.time.LocalDate;
 
 public class FirstFilmBirthdayValidatorImpl implements ConstraintValidator<FirstFilmBirthdayValidator, LocalDate> {
-    private final LocalDate firstFilmBirthday = LocalDate.of(1895, 12, 27);
+    private final LocalDate firstFilmBirthday = LocalDate.of(1895, 12, 28);
 
     @Override
     public void initialize(FirstFilmBirthdayValidator contactNumber) {
@@ -13,6 +13,6 @@ public class FirstFilmBirthdayValidatorImpl implements ConstraintValidator<First
 
     @Override
     public boolean isValid(LocalDate releaseDate, ConstraintValidatorContext constraintValidatorContext) {
-        return releaseDate == null || releaseDate.isAfter(firstFilmBirthday);
+        return releaseDate == null || !releaseDate.isBefore(firstFilmBirthday);
     }
 }

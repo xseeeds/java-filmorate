@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage.user.dao;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -12,6 +13,7 @@ import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -97,12 +99,7 @@ public class DbUserStorageImpl implements UserStorage {
                             "WHERE user_id = ?",
                     userBuilder.getId());
 
-            userBuilder.getFriendsIdsStatus().forEach(
-                    (friend_id, status) -> jdbcTemplate.update(
-                            "INSERT INTO friendship " +
-                                    "(user_id, friend_id, status) " +
-                                    "VALUES (?, ?, ?)",
-                            userBuilder.getId(), friend_id, status.toString()));
+            updateAllFriendsByUserId(userBuilder.getId(), userBuilder.getFriendsIdsStatus());
         }
 
         return userBuilder;
@@ -124,7 +121,7 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllUser() {
+    public List<User> getAllUser() {
 
         final String sql =
                 "SELECT * " +
@@ -280,13 +277,13 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllFriendsByUserId(long userId) {
+    public List<User> getAllFriendsByUserId(long userId) {
 
         final String sql =
                 "SELECT users.id, users.email, users.login, users.name, users.birthday " +
                         "FROM users " +
                         "JOIN friendship ON users.id = friendship.friend_id " +
-                        "WHERE friendship.user_id = ? " +
+                        "AND friendship.user_id = ? " +
                         "AND (status LIKE 'FRIENDSHIP'" +
                         "OR status LIKE 'SUBSCRIPTION')";
 
@@ -296,14 +293,14 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getCommonFriendsByUser(long userId, long otherId) {
+    public List<User> getCommonFriendsByUser(long userId, long otherId) {
 
         final String sql =
                 "SELECT users.id, users.email, users.login, users.name, users.birthday " +
                         "FROM users " +
                         "JOIN friendship AS fs1 ON fs1.friend_id = users.id " +
                         "JOIN friendship AS fs2 ON fs1.friend_id = fs2.friend_id " +
-                        "WHERE fs1.user_id = ? AND fs2.user_id = ? " +
+                        "AND fs1.user_id = ? AND fs2.user_id = ? " +
                         "AND (fs2.status LIKE 'FRIENDSHIP' " +
                         "OR fs2.status LIKE 'SUBSCRIPTION')";
 
@@ -437,12 +434,40 @@ public class DbUserStorageImpl implements UserStorage {
                                                 Map.Entry::getKey,
                                                 Map.Entry::getValue,
                                                 (oldValue, newValue) -> newValue,
-                                                HashMap::new)));
+                                                HashMap::new
+                                        )
+                                )
+                );
 
         return userBuilder;
     }
 
     private Map<Long, Status> makeFriend(ResultSet rs, int rowNum) throws SQLException {
         return Map.of(rs.getLong("friend_id"), Status.valueOf(rs.getString("status")));
+    }
+
+    private void updateAllFriendsByUserId(long userId, Map<Long, Status> allFriendsIdsStatus) {
+        //TODO преобразование id из long в int
+        List<Integer> friendsIds = new ArrayList<>();
+        List<Status> allStatus = new ArrayList<>();
+
+        allFriendsIdsStatus.forEach((fiendId, status) -> {
+            friendsIds.add(fiendId.intValue());
+            allStatus.add(status);
+        });
+
+        jdbcTemplate.batchUpdate("INSERT INTO friendship (user_id, friend_id, status) VALUES (?, ?, ?)", new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, userId);
+                ps.setLong(2, friendsIds.get(i));
+                ps.setString(3, allStatus.get(i).toString());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return allFriendsIdsStatus.size();
+            }
+        });
     }
 }

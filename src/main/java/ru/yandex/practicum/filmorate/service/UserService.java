@@ -15,7 +15,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Positive;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 import static ru.yandex.practicum.filmorate.model.Status.*;
 
@@ -55,9 +55,9 @@ public class UserService {
         return user;
     }
 
-    public Collection<User> getAllUser() {
+    public List<User> getAllUser() {
 
-        final Collection<User> allUser = userStorage.getAllUser();
+        final List<User> allUser = userStorage.getAllUser();
 
         log.info("Текущее количество пользователей : {}", allUser.size());
 
@@ -165,11 +165,11 @@ public class UserService {
         }
     }
 
-    public Collection<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException {
+    public List<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException {
 
         userStorage.checkUserById(userId);
 
-        Collection<User> allFriends = new ArrayList<>();
+        List<User> allFriends = new ArrayList<>();
 
         try {
             userStorage.checkFriendByUserId(userId);
@@ -188,13 +188,13 @@ public class UserService {
         return allFriends;
     }
 
-    public Collection<User> getCommonFriendsByUser(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
+    public List<User> getCommonFriendsByUser(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
 
         userStorage.checkUserById(userId);
 
         userStorage.checkUserById(otherId);
 
-        Collection<User> commonFriends = new ArrayList<>();
+        List<User> commonFriends = new ArrayList<>();
 
         try {
             userStorage.checkFriendByUserId(userId);

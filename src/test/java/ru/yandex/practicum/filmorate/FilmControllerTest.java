@@ -454,15 +454,15 @@ public class FilmControllerTest {
                         .json(testUserWithId));
 
 
-        mockMvc.perform(put("/films/2/like/1"))
+        mockMvc.perform(put("/films/2/like/1?mark=7"))
                 .andExpect(status()
                         .isOk());
 
         mockMvc.perform(get("/films/2"))
                 .andExpect(status()
                         .isOk())
-                .andExpect(jsonPath("$.userFilmLike[0]")
-                        .value("1"));
+                .andExpect(jsonPath("$.userFilmLike.*", hasSize(1)))
+                .andExpect(jsonPath("$.userFilmLike.1").value("7"));
 
         mockMvc.perform(put("/films/2/like/1"))
                 .andExpect(status()

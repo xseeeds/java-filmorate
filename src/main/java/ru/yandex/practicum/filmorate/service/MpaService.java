@@ -27,9 +27,9 @@ public class MpaService {
         return allMpa;
     }
 
-    public Mpa getMpaById(@Positive int id) {
-        log.info("Mpa получен по id => {}", id);
+    public Mpa getMpaById(@Positive int mpaId) {
+        log.info("Mpa получен по id => {}", mpaId);
 
-        return mpaStorage.getMpaById(id);
+        return mpaStorage.getMpaById(mpaId);
     }
 }

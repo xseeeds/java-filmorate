@@ -9,7 +9,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.util.Collection;
+import java.util.List;
 
 
 @RestController
@@ -45,7 +45,7 @@ public class FilmController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public Collection<Film> getAllFilm() {
+    public List<Film> getAllFilm() {
         return filmService.getAllFilm();
     }
 
@@ -61,19 +61,21 @@ public class FilmController {
 
     @PutMapping("/{filmId}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public void addUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
-        filmService.addUserLikeByFilmId(filmId, userId);
+    public void addUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId,
+                                    @RequestParam(value = "mark", defaultValue = "0", required = false) int mark) {
+        filmService.addUserLikeByFilmId(filmId, userId, mark);                                      //?mark={mark}
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public void removeUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId) {
-        filmService.removeUserLikeByFilmId(filmId, userId);
+    public void removeUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId,
+                                       @RequestParam(value = "mark", defaultValue = "0", required = false) int mark) {
+        filmService.removeUserLikeByFilmId(filmId, userId, mark);                                       //?mark={mark}
     }
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<Film> getFilmByPopular(
+    public List<Film> getFilmByPopular(
             @RequestParam(value = "count", defaultValue = "10", required = false) int count) {
         return filmService.getFilmByPopular(count);                         //?count={count}
     }

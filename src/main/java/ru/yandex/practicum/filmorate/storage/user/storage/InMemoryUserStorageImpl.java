@@ -9,7 +9,8 @@ import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 import static java.util.stream.Collectors.toList;
@@ -94,9 +95,9 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllUser() {
+    public List<User> getAllUser() {
 
-        return users.values();
+        return new ArrayList<>(users.values());
     }
 
     @Override
@@ -193,7 +194,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllFriendsByUserId(long userId) {
+    public List<User> getAllFriendsByUserId(long userId) {
 
         return users.get(userId)
                 .getFriendsIdsStatus()
@@ -206,7 +207,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getCommonFriendsByUser(long userId, long otherUserId) {
+    public List<User> getCommonFriendsByUser(long userId, long otherUserId) {
 
         return users.get(userId)
                 .getFriendsIdsStatus()

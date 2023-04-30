@@ -6,7 +6,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.TreeMap;
+import java.util.HashMap;
+import java.util.Map;
 
 @Value
 @Builder(toBuilder = true)
@@ -30,6 +31,6 @@ public class User {
     LocalDate birthday;
 
     @Builder.Default
-    TreeMap<Long, Status> friendsIdsStatus = new TreeMap<>();
+    Map<Long, Status> friendsIdsStatus = new HashMap<>();
 
 }

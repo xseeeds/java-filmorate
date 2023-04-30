@@ -18,7 +18,6 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -56,7 +55,7 @@ public class FilmGenreDatabaseTest {
                         "Такой фильм с id => 1 не существует");
 
 
-        final Collection<Film> films = filmStorage.getAllFilm();
+        final List<Film> films = filmStorage.getAllFilm();
 
         assertThat(films)
                 .size()
@@ -92,7 +91,7 @@ public class FilmGenreDatabaseTest {
                 .hasFieldOrPropertyWithValue(
                         "rate", (float) 5);
 
-        final Collection<Film> allFilms = filmStorage.getAllFilm();
+        final List<Film> allFilms = filmStorage.getAllFilm();
 
         assertThat(
                 allFilms)
@@ -162,7 +161,7 @@ public class FilmGenreDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        filmStorage.addUserLikeOnFilm(2L, 1L);
+        filmStorage.addUserLikeOnFilm(2L, 1L, 3);
 
         assertThat(
                 new ArrayList<>(filmStorage.getFilmByPopular(10)).get(0))
@@ -175,8 +174,8 @@ public class FilmGenreDatabaseTest {
                         "name", "The Shawshank Redemption");
 
 
-        filmStorage.removeUserLikeOnFilm(2L, 1L);
-        filmStorage.addUserLikeOnFilm(1L, 1L);
+        filmStorage.removeUserLikeOnFilm(2L, 1L, 3);
+        filmStorage.addUserLikeOnFilm(1L, 1L,  7);
 
         assertThat(
                 new ArrayList<>(

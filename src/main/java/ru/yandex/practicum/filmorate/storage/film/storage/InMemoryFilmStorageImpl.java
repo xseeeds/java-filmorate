@@ -60,12 +60,12 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public Collection<Film> getAllFilm() {
-        return films;
+    public List<Film> getAllFilm() {
+        return new ArrayList<>(films);
     }
 
     @Override
-    public Collection<Film> getFilmByPopular(int count) {
+    public List<Film> getFilmByPopular(int count) {
         return films
                 .stream()
                 .limit(count)
@@ -120,14 +120,14 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
 
         if (addOrRemove) {
 
-            if (film.getUserFilmLike().contains(userId)) {
+            if (film.getUserFilmLike().containsKey(userId)) {
                 throw new ConflictException("У фильма с id => " + film.getId()
                         + " уже существует лайк пользователя с id => " + userId);
             }
 
         } else {
 
-            if (!film.getUserFilmLike().contains(userId)) {
+            if (!film.getUserFilmLike().containsKey(userId)) {
                 throw new NotFoundException("У фильма с id => " + film.getId()
                         + " не существует лайка пользователя с id => " + userId);
             }
@@ -135,12 +135,12 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public void addUserLikeOnFilm(long filmId, long userId) {
-        getFilmById(filmId).getUserFilmLike().add(userId);
+    public void addUserLikeOnFilm(long filmId, long userId, int mark) {
+        getFilmById(filmId).getUserFilmLike().put(userId, mark);
     }
 
     @Override
-    public void removeUserLikeOnFilm(long filmId, long userId) {
+    public void removeUserLikeOnFilm(long filmId, long userId, int mark) {
         getFilmById(filmId).getUserFilmLike().remove(userId);
     }
 
