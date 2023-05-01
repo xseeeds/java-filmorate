@@ -2,12 +2,16 @@ package ru.yandex.practicum.filmorate.storage.film.storage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -51,7 +55,7 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public Film getFilmById(long filmId) {
+    public Film getFilmById(long filmId) throws NotFoundException {
         return films
                 .stream()
                 .filter(f -> f.getId() == filmId)
@@ -102,14 +106,14 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public void checkFilmByNameReleaseDateDuration(Film film) throws ConflictException {
+    public void checkFilmByNameReleaseDate(Film film) throws ConflictException {
 
         final Film ceil = films.ceiling(film);
         final Film floor = films.floor(film);
 
         if (Objects.equals(ceil, floor) && ceil != null) {
-            throw new ConflictException("Такой фильм: " + film
-                    + " уже существует, по id => " + ceil.getId());
+            throw new ConflictException("Такой фильм с именем => " + film.getName() + " и датой релиза => " + film.getReleaseDate()
+                    + " уже существует по id => " + ceil.getId());
         }
     }
 
@@ -142,6 +146,18 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     @Override
     public void removeUserLikeOnFilm(long filmId, long userId, int mark) {
         getFilmById(filmId).getUserFilmLike().remove(userId);
+    }
+
+    //TODO можно попрактивоться
+
+    @Override
+    public List<Film> getFilmsByDirector(long directorId, String sortBy) throws ConflictException {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /getFilmsByDirector не реализован.");
+    }
+
+    @Override
+    public Film makeFilm(ResultSet resultSet, int rowNumber) throws SQLException {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /makeFilm не реализован.");
     }
 
     private long getNextId() {

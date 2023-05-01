@@ -9,8 +9,10 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.PreparedStatement;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbUserStorageImpl implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final FilmStorage filmStorage;
 
     @Override
     public User createUser(User user) {
@@ -94,19 +97,14 @@ public class DbUserStorageImpl implements UserStorage {
 
         if (!userBuilder.getFriendsIdsStatus().isEmpty()) {
 
-            jdbcTemplate.update(
-                    "DELETE FROM friendship " +
-                            "WHERE user_id = ?",
-                    userBuilder.getId());
-
-            updateAllFriendsByUserId(userBuilder.getId(), userBuilder.getFriendsIdsStatus());
+            updateAllFriendsByUserId(userBuilder);
         }
 
         return userBuilder;
     }
 
     @Override
-    public User getUserById(long userId) {
+    public User getUserById(long userId) throws NotFoundException {
 
         checkUserById(userId);
 
@@ -401,6 +399,40 @@ public class DbUserStorageImpl implements UserStorage {
         }
     }
 
+    @Override
+    public List<Film> getRecommendationsFilmsByUserId(long userId) {
+
+        final String sqlGetFilmsByUsersWithSimilarLikes =
+                "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                        "FROM films f " +
+                        "JOIN user_film_like ufl ON ufl.film_id = f.id " +
+                        "AND ufl.user_id IN " +
+                                            "( " +
+                                            "SELECT ulf1.user_id " +
+                                            "FROM user_film_like ulf1 " +
+                                            "WHERE ulf1.film_id IN " +
+                                                                    "( " +
+                                                                    "SELECT ulf2.film_id " +
+                                                                    "FROM user_film_like ulf2 " +
+                                                                    "WHERE ulf2.user_id = ? " +
+                                                                    ") " +
+                                            "AND ulf1.user_id <> ? " +
+                                            "GROUP BY ulf1.user_id " +
+                                            "HAVING COUNT(ulf1.user_id) >= 1 " +
+                                            ") " +
+                        "AND f.id NOT IN " +
+                                        "( " +
+                                         "SELECT ufl3.film_id " +
+                                         "FROM user_film_like ufl3 " +
+                                         "WHERE ufl3.user_id = ? " +
+                                        ") " +
+                        "GROUP BY f.id " +
+                        "ORDER BY COUNT(ufl.user_id) DESC";
+
+        return jdbcTemplate.query(sqlGetFilmsByUsersWithSimilarLikes,
+                filmStorage::makeFilm, userId, userId, userId);
+    }
+
     private User makeUser(ResultSet resultSet, int rowNum) throws SQLException {
 
         final String sql =
@@ -446,27 +478,39 @@ public class DbUserStorageImpl implements UserStorage {
         return Map.of(rs.getLong("friend_id"), Status.valueOf(rs.getString("status")));
     }
 
-    private void updateAllFriendsByUserId(long userId, Map<Long, Status> allFriendsIdsStatus) {
-        //TODO преобразование id из long в int
-        List<Integer> friendsIds = new ArrayList<>();
-        List<Status> allStatus = new ArrayList<>();
+    private void updateAllFriendsByUserId(User user) {
 
-        allFriendsIdsStatus.forEach((fiendId, status) -> {
+        jdbcTemplate.update(
+                "DELETE FROM friendship " +
+                        "WHERE user_id = ?",
+                user.getId());
+
+        //TODO преобразование id из long в int для batchUpdate
+
+        List<Integer> friendsIds = new ArrayList<>();
+        List<Status> allStatuses = new ArrayList<>();
+
+        user.getFriendsIdsStatus().forEach((fiendId, status) -> {
             friendsIds.add(fiendId.intValue());
-            allStatus.add(status);
+            allStatuses.add(status);
         });
 
-        jdbcTemplate.batchUpdate("INSERT INTO friendship (user_id, friend_id, status) VALUES (?, ?, ?)", new BatchPreparedStatementSetter() {
+        final String sqlQuery =
+                "INSERT INTO friendship " +
+                        "(user_id, friend_id, status) " +
+                        "VALUES (?, ?, ?)";
+
+                jdbcTemplate.batchUpdate(sqlQuery, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ps.setLong(1, userId);
+                ps.setLong(1, user.getId());
                 ps.setLong(2, friendsIds.get(i));
-                ps.setString(3, allStatus.get(i).toString());
+                ps.setString(3, allStatuses.get(i).toString());
             }
 
             @Override
             public int getBatchSize() {
-                return allFriendsIdsStatus.size();
+                return user.getFriendsIdsStatus().size();
             }
         });
     }

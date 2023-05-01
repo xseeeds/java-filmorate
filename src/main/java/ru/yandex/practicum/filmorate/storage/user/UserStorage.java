@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -16,7 +17,7 @@ public interface UserStorage {
 
     User updateUser(User user);
 
-    User getUserById(long userId);
+    User getUserById(long userId) throws NotFoundException;
 
     List<User> getAllUser();
 
@@ -54,4 +55,5 @@ public interface UserStorage {
 
     void checkUserIdOnEmail(String updateUserEmail, long updateUserId) throws ConflictException;
 
+    List<Film> getRecommendationsFilmsByUserId(long userId);
 }

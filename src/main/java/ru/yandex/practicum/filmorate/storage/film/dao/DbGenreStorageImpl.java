@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 
-@Repository
+@Repository("genreStorage")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbGenreStorageImpl implements GenreStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -31,8 +31,8 @@ public class DbGenreStorageImpl implements GenreStorage {
                 .withTableName("genres")
                 .usingGeneratedKeyColumns("id");
 
-        final int genreId =  simpleJdbcInsert.executeAndReturnKey(
-                genreFields).intValue();
+        final long genreId = simpleJdbcInsert.executeAndReturnKey(
+                genreFields).longValue();
 
         genre.setId(genreId);
 
@@ -54,7 +54,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public void addGenreOnFilm(int genreId, long filmId) {
+    public void addGenreOnFilm(long genreId, long filmId) {
 
         final String sql =
                 "INSERT INTO film_genre " +
@@ -66,7 +66,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public void removeGenreOnFilm(int genreId, long filmId) {
+    public void removeGenreOnFilm(long genreId, long filmId) {
 
         final String sql =
                 "DELETE FROM film_genre " +
@@ -78,7 +78,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public void checkGenreOnFilm(int genreId, long filmId, boolean addOrRemove) throws NotFoundException, ConflictException {
+    public void checkGenreOnFilm(long genreId, long filmId, boolean addOrRemove) throws NotFoundException, ConflictException {
 
         final String sql =
                 "SELECT genre_id " +
@@ -103,7 +103,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public List<Genre> getGenreList() {
+    public List<Genre> getAllGenre() {
 
         final String sql =
                 "SELECT * " +
@@ -115,7 +115,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public Genre getGenreById(int id) throws NotFoundException {
+    public Genre getGenreById(long id) throws NotFoundException {
 
         final String sql =
                 "SELECT name " +
@@ -137,7 +137,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public void checkGenreById(int id) throws NotFoundException {
+    public void checkGenreById(long id) throws NotFoundException {
 
         final String sql =
                 "SELECT id " +
@@ -153,7 +153,7 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public void checkGenre(Genre genre) throws NotFoundException {
+    public void checkGenreByName(Genre genre) throws ConflictException {
 
         final boolean newGenre = (genre.getId() == null);
 
@@ -178,16 +178,19 @@ public class DbGenreStorageImpl implements GenreStorage {
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql, params);
 
         if (rows.next()) {
-            throw new NotFoundException("Жанр => " + genre.getName() + " уже существует по id => " + rows.getString("id"));
+            throw new ConflictException("Жанр => " + genre.getName() + " уже существует по id => " + rows.getString("id"));
         }
 
     }
 
     @Override
-    public void removeGenreById(int id) {
+    public void removeGenreById(long id) throws NotFoundException {
+
+        checkGenreById(id);
+
         jdbcTemplate.update(
                 "DELETE FROM genres " +
-                "WHERE id = ?",
+                        "WHERE id = ?",
                 id);
     }
 
@@ -202,7 +205,7 @@ public class DbGenreStorageImpl implements GenreStorage {
 
         return Genre
                 .builder()
-                .id(resultSet.getInt("id"))
+                .id(resultSet.getLong("id"))
                 .name(resultSet.getString("name"))
                 .build();
 

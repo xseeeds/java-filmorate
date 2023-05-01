@@ -21,7 +21,7 @@ public class FilmController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Film addFilm(@RequestBody Film film) {
+    public Film createFilm(@RequestBody Film film) {
         if (film.getId() != null) {
             throw new BadRequestException("POST request. Для обновления используй PUT запрос, film имеет id!!!");
         }
@@ -80,5 +80,10 @@ public class FilmController {
         return filmService.getFilmByPopular(count);                         //?count={count}
     }
 
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(@PathVariable("directorId") long directorId,
+                                         @RequestParam(value = "sortBy", defaultValue = "year", required = false) String sortBy) {
+        return filmService.getFilmsByDirector(directorId, sortBy);                               //?sortBy=[year,likes]
+    }
 
 }

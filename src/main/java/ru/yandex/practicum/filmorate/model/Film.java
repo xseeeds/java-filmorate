@@ -10,10 +10,7 @@ import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthdayValidator;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Data
@@ -33,6 +30,7 @@ public class Film {
     private String description;
 
     @Positive
+    @EqualsAndHashCode.Exclude
     private int duration;
 
     @FirstFilmBirthdayValidator
@@ -43,11 +41,17 @@ public class Film {
     @EqualsAndHashCode.Exclude
     private float rate;
 
+    @EqualsAndHashCode.Exclude
     private Mpa mpa;
 
+    @EqualsAndHashCode.Exclude
     private final List<Genre> genres = new ArrayList<>();
 
+    @EqualsAndHashCode.Exclude
+    private final List<Director> directors = new ArrayList<>();
+
     //TODO HashMap<Long, Integer> likes; userId/rate
+    @EqualsAndHashCode.Exclude
     private final Map<Long, Integer> userFilmLike = new HashMap<>();
 
     @JsonIgnore

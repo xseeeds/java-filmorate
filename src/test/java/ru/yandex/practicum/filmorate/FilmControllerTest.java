@@ -298,7 +298,7 @@ public class FilmControllerTest {
                 .builder()
                 .id(1L)
                 .name("Film Updated")
-                .description("New film update decription")
+                .description("New film updateDirector decription")
                 .releaseDate(LocalDate.of(1989, 4, 17))
                 .duration(190)
                 .rate(4)
@@ -322,7 +322,7 @@ public class FilmControllerTest {
         final Film emptyFilmId = Film
                 .builder()
                 .name("Film Updated")
-                .description("New film update decription")
+                .description("New film updateDirector decription")
                 .releaseDate(LocalDate.of(1989, 4, 17))
                 .duration(190)
                 .rate(4)

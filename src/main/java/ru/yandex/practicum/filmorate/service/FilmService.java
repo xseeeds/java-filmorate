@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -25,12 +26,12 @@ import java.util.List;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
-
+    private final DirectorStorage directorStorage;
 
     @Validated
     public Film createFilm(@Valid Film film) throws ConflictException {
 
-        filmStorage.checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDate(film);
 
         final Film createdFilm = filmStorage.createFilm(film);
 
@@ -44,7 +45,7 @@ public class FilmService {
 
         filmStorage.checkFilmById(film.getId());
 
-        filmStorage.checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDate(film);
 
         final Film updatedFilm = filmStorage.updateFilm(film);
 
@@ -99,7 +100,7 @@ public class FilmService {
 
         filmStorage.addUserLikeOnFilm(filmId, userId, mark);
 
-        log.info("Пользователем c id => {} добавлен лайк фильму c id => {}", userId, filmId);
+        log.info("Пользователем c id => {} добавлен лайк фильму c id => {} mark => {}", userId, filmId, mark);
     }
 
     public void removeUserLikeByFilmId(@Positive long filmId, @Min(-2) long userId, @Min(0) @Max(10) int mark) throws ConflictException, NotFoundException {
@@ -112,7 +113,7 @@ public class FilmService {
 
         filmStorage.removeUserLikeOnFilm(filmId, userId, mark);
 
-        log.info("Пользователем c id => {} удален лайк у фильма c id => {}", userId, filmId);
+        log.info("Пользователем c id => {} удален лайк у фильма c id => {} mark => {}", userId, filmId, mark);
     }
 
     public List<Film> getFilmByPopular(@Positive int count) {
@@ -122,6 +123,18 @@ public class FilmService {
         log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
 
         return filmByPopular;
+    }
+
+    public List<Film> getFilmsByDirector(@Positive long directorId, String sortBy) throws NotFoundException {
+
+        directorStorage.getDirectorById(directorId);
+
+        final List<Film> filmsByDirector = filmStorage.getFilmsByDirector(directorId, sortBy);
+
+        log.info("Запроc фильмов по режиссёру с id => {} количество фильмов : {} отсортированных по : {}", directorId, filmsByDirector.size(), sortBy);
+
+        return filmsByDirector;
+
     }
 
 }

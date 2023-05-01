@@ -27,12 +27,12 @@ class UserDatabaseTest {
     private final UserService userService;
 
     @AfterEach
-    public void ternDown() {
+    void ternDown() {
         userStorage.removeAllUser();
     }
 
     @Test
-    public void testUserCreateGetUpdateCheck() {
+    void testUserCreateGetUpdateCheck() {
 
         assertThatThrownBy(
                 () -> userStorage.checkUserById(1L))
@@ -96,7 +96,7 @@ class UserDatabaseTest {
     }
 
     @Test
-    public void testUserCheckLoginAndEmail() {
+    void testUserCheckLoginAndEmail() {
 
         userStorage.createUser(
                 User
@@ -133,7 +133,7 @@ class UserDatabaseTest {
     }
 
     @Test
-    public void testUserFriend() {
+    void testUserFriend() {
 
         userStorage.createUser(
                 User
@@ -194,7 +194,7 @@ class UserDatabaseTest {
     }
 
     @Test
-    public void testFriendship() {
+    void testFriendship() {
 
         userStorage.createUser(
                 User
@@ -277,6 +277,10 @@ class UserDatabaseTest {
                 .isTrue();
     }
 
+    //TODO написать тест
+    @Test
+    void testRecommendationsFilmsByUserId() {
 
+    }
 
 }

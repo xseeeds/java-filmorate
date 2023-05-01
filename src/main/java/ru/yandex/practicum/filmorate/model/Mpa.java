@@ -7,7 +7,7 @@ import lombok.Getter;
 @Builder
 public class Mpa {
 
-    private final int id;
+    private final Long id;
 
     private final String name;
 

@@ -2,9 +2,12 @@ package ru.yandex.practicum.filmorate.storage.user.storage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -83,7 +86,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public User getUserById(long userId) {
+    public User getUserById(long userId) throws NotFoundException {
 
         final User user = users.get(userId);
 
@@ -272,6 +275,13 @@ public class InMemoryUserStorageImpl implements UserStorage {
             throw new ConflictException("Такой пользователь с email: " + updateUserEmail
                     + " уже существует, по id => " + existentId);
         }
+    }
+
+    //TODO интересная задачка потренироваться getRecommendationsFilmsByUserId)))
+
+    @Override
+    public List<Film> getRecommendationsFilmsByUserId(long userId) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /getRecommendationsFilmsByUserId не реализован.");
     }
 
     private long getNextId() {

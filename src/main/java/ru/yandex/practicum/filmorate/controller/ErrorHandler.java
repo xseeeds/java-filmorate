@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.model.ValidationErrorResponse;
 import ru.yandex.practicum.filmorate.model.Violation;
 
 import javax.validation.ConstraintViolationException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,8 +22,8 @@ import java.util.stream.Collectors;
 @RestControllerAdvice("ru.yandex.practicum.filmorate.controller")
 public class ErrorHandler {
 
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(BadRequestException.class)
     public ErrorResponse errorBadRequestException(
             final BadRequestException e
     ) {
@@ -30,22 +31,35 @@ public class ErrorHandler {
         return new ErrorResponse(HttpStatus.BAD_REQUEST.toString(), "errorNotFoundException", e.getMessage());
     }
 
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(NotFoundException.class)
     public ErrorResponse errorNotFoundException(
             final NotFoundException e
     ) {
         log.error(e.getMessage(), e);
-        return new ErrorResponse(HttpStatus.NOT_FOUND.toString(), "errorNotFoundException", e.getMessage());
+        return new ErrorResponse(HttpStatus.NOT_FOUND.toString(),
+                "errorNotFoundException", e.getMessage());
     }
 
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(ConflictException.class)
     public ErrorResponse errorConflictException(
             final ConflictException e
     ) {
         log.error(e.getMessage(), e);
-        return new ErrorResponse(HttpStatus.CONFLICT.toString(), "errorConflictException", e.getMessage());
+        return new ErrorResponse(HttpStatus.CONFLICT.toString(),
+                "errorConflictException", e.getMessage());
+    }
+
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
+    public ErrorResponse errorConflictException(
+            final SQLIntegrityConstraintViolationException e
+    ) {
+        log.error(e.getMessage(), e);
+        final String[] message = e.getMessage().split("\\)");
+        return new ErrorResponse(HttpStatus.CONFLICT.toString(),
+                "errorSQLIntegrityConstraintViolationException", message[0] + ") " + message[1] + ")");
     }
 
 

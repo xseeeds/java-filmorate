@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-@Repository
+@Repository("mpaStorage")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbMpaStorageImpl implements MpaStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -30,7 +30,7 @@ public class DbMpaStorageImpl implements MpaStorage {
     }
 
     @Override
-    public Mpa getMpaById(int id) throws NotFoundException {
+    public Mpa getMpaById(long id) throws NotFoundException {
 
         final String sql =
                 "SELECT name " +
@@ -56,7 +56,7 @@ public class DbMpaStorageImpl implements MpaStorage {
 
         return Mpa
                 .builder()
-                .id(resultSet.getInt("id"))
+                .id(resultSet.getLong("id"))
                 .name(resultSet.getString("name"))
                 .build();
 

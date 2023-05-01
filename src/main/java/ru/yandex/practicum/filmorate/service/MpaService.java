@@ -20,6 +20,7 @@ public class MpaService {
 
 
     public List<Mpa> getMpaList() {
+
         List<Mpa> allMpa = mpaStorage.getMpaList();
 
         log.info("Mpa получены (кол-во) => {}", allMpa.size());
@@ -27,7 +28,8 @@ public class MpaService {
         return allMpa;
     }
 
-    public Mpa getMpaById(@Positive int mpaId) {
+    public Mpa getMpaById(@Positive long mpaId) {
+
         log.info("Mpa получен по id => {}", mpaId);
 
         return mpaStorage.getMpaById(mpaId);

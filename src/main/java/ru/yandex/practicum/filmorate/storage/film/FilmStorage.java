@@ -4,6 +4,8 @@ import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 
@@ -15,7 +17,7 @@ public interface FilmStorage {
 
     Film updateFilm(Film film);
 
-    Film getFilmById(long filmId);
+    Film getFilmById(long filmId) throws NotFoundException;
 
     List<Film> getAllFilm();
 
@@ -27,11 +29,15 @@ public interface FilmStorage {
 
     void checkFilmById(long filmId) throws NotFoundException;
 
-    void checkFilmByNameReleaseDateDuration(Film film) throws ConflictException;
+    void checkFilmByNameReleaseDate(Film film) throws ConflictException;
 
     void checkFilmLikeByUserId(long filmId, long userId, boolean addOrRemove) throws ConflictException, NotFoundException;
 
     void addUserLikeOnFilm(long filmId, long userId, int mark);
 
     void removeUserLikeOnFilm(long filmId, long userId, int mark);
+
+    List<Film> getFilmsByDirector(long directorId, String sortBy) throws NotFoundException;
+
+    Film makeFilm(ResultSet resultSet, int rowNumber) throws SQLException;
 }
