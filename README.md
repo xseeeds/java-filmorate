@@ -41,7 +41,7 @@ http://localhost:8080/films/popular?count={count}
 <details>
   <summary><h2> Примеры запросов SQL </h2></summary>
 
-```h2
+```sql
 -- добавление записи в таблицу USERS:
 INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?);
 
