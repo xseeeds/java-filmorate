@@ -70,20 +70,33 @@ public class FilmController {
     @ResponseStatus(HttpStatus.OK)
     public void removeUserLikeByFilmId(@PathVariable long filmId, @PathVariable long userId,
                                        @RequestParam(value = "mark", defaultValue = "0", required = false) int mark) {
-        filmService.removeUserLikeByFilmId(filmId, userId, mark);                                       //?mark={mark}
+        filmService.removeUserLikeByFilmId(filmId, userId, mark);                                   //?mark={mark}
     }
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
     public List<Film> getFilmByPopular(
-            @RequestParam(value = "count", defaultValue = "10", required = false) int count) {
-        return filmService.getFilmByPopular(count);                         //?count={count}
+            @RequestParam(value = "count", defaultValue = "10", required = false) int count,
+            @RequestParam(required = false) String genre, @RequestParam(required = false) Integer year) {
+        return filmService.getFilmByPopular(count, genre, year);                //?count={count}&genre={genre}&year={year}
     }
 
     @GetMapping("/director/{directorId}")
     public List<Film> getFilmsByDirector(@PathVariable("directorId") long directorId,
                                          @RequestParam(value = "sortBy", defaultValue = "year", required = false) String sortBy) {
-        return filmService.getFilmsByDirector(directorId, sortBy);                               //?sortBy=[year,likes]
+        return filmService.getFilmsByDirector(directorId, sortBy);                                  //?sortBy=[year,likes]
+    }
+
+    //TODO написать тесты
+
+    @GetMapping("/common")
+    public List<Film> getCommonFilms(@RequestParam long userId, @RequestParam("friendId") long otherId) {
+        return filmService.getCommonFilms(userId, otherId);                     //?userId={userId}&friendId={friendId}
+    }
+
+    @GetMapping("/search")
+    public List<Film> getFilmsBySearch(@RequestParam String query, @RequestParam String by) {
+        return filmService.getFilmsBySearch(query, by);                             //?query=крад&by=director,title
     }
 
 }

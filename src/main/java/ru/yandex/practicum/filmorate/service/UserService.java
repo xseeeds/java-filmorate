@@ -59,7 +59,7 @@ public class UserService {
 
         final List<User> allUser = userStorage.getAllUser();
 
-        log.info("Текущее количество пользователей : {}", allUser.size());
+        log.info("Текущее количество пользователей => {}", allUser.size());
 
         return allUser;
     }

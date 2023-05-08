@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Getter
 @RequiredArgsConstructor
 public class Violation {
+
     private final LocalDateTime timestamp = LocalDateTime.now();
 
     private final String fieldName;

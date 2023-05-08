@@ -45,7 +45,7 @@ public class GenreService {
     @Validated
     public Genre createGenre(@Valid Genre genre) throws ConflictException {
 
-        genreStorage.checkGenreByName(genre);
+        genreStorage.checkGenreByName(genre.getName(), true);
 
         final Genre createdGenre = genreStorage.createGenre(genre);
 
@@ -60,7 +60,7 @@ public class GenreService {
 
         genreStorage.checkGenreById(genre.getId());
 
-        genreStorage.checkGenreByName(genre);
+        genreStorage.checkGenreByName(genre.getName(), true);
 
         final Genre updatedGenre = genreStorage.updateGenre(genre);
 

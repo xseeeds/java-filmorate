@@ -79,8 +79,8 @@ INSERT INTO film_mpa (film_id, mpa_id) VALUES (?, ?);
 SELECT f.id, f.name, f.description, f.duration, f.release_date, f.rate
 FROM films AS f
 LEFT JOIN user_film_like AS ufl ON f.id = ufl.film_id
-GROUP BY f.id
-ORDER BY count(ufl.film_id) DESC
+GROUP BY f.id, f.rate
+ORDER BY f.rate DESC
 LIMIT ?;
 
 -- пример выборки данных из таблиц USERS и USER_FRIENDS получение общих друзей двух пользователей:

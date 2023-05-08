@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,7 +16,7 @@ import java.util.*;
 @Builder
 public class Film {
 
-    @Min(value = 0, message = "должно быть больше 0")
+    @Positive
     @EqualsAndHashCode.Exclude
     private Long id;
 
@@ -36,7 +35,8 @@ public class Film {
     @FirstFilmBirthdayValidator
     private LocalDate releaseDate;
 
-    @Max(value = 10)
+    @Min(0)
+    @Max(10)
     @PositiveOrZero
     @EqualsAndHashCode.Exclude
     private float rate;
@@ -54,8 +54,4 @@ public class Film {
     @EqualsAndHashCode.Exclude
     private final Map<Long, Integer> userFilmLike = new HashMap<>();
 
-    @JsonIgnore
-    public int getLikesSize() {
-        return userFilmLike.size();
-    }
 }

@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import javax.validation.Valid;
@@ -27,6 +28,7 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
     private final DirectorStorage directorStorage;
+    private final GenreStorage genreStorage;
 
     @Validated
     public Film createFilm(@Valid Film film) throws ConflictException {
@@ -98,7 +100,7 @@ public class FilmService {
 
         filmStorage.checkFilmLikeByUserId(filmId, userId, true);
 
-        filmStorage.addUserLikeOnFilm(filmId, userId, mark);
+        filmStorage.addUserMarkOnFilm(filmId, userId, mark);
 
         log.info("Пользователем c id => {} добавлен лайк фильму c id => {} mark => {}", userId, filmId, mark);
     }
@@ -111,30 +113,56 @@ public class FilmService {
 
         filmStorage.checkFilmLikeByUserId(filmId, userId, false);
 
-        filmStorage.removeUserLikeOnFilm(filmId, userId, mark);
+        filmStorage.removeUserMarkOnFilm(filmId, userId, mark);
 
         log.info("Пользователем c id => {} удален лайк у фильма c id => {} mark => {}", userId, filmId, mark);
     }
 
-    public List<Film> getFilmByPopular(@Positive int count) {
+    public List<Film> getFilmByPopular(@Positive int count, String genre, @Positive Integer year) throws NotFoundException {
 
-        final List<Film> filmByPopular = filmStorage.getFilmByPopular(count);
+        if (genre != null) {
+            genreStorage.checkGenreByName(genre, false);
+        }
 
-        log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
+        final List<Film> filmByPopular = filmStorage.getFilmByPopular(count, genre, year);
+
+        log.info("Запрошенное количество фильмов по популярности => {}", filmByPopular.size());
 
         return filmByPopular;
     }
 
     public List<Film> getFilmsByDirector(@Positive long directorId, String sortBy) throws NotFoundException {
 
-        directorStorage.getDirectorById(directorId);
+        directorStorage.checkDirectorById(directorId);
 
         final List<Film> filmsByDirector = filmStorage.getFilmsByDirector(directorId, sortBy);
 
-        log.info("Запроc фильмов по режиссёру с id => {} количество фильмов : {} отсортированных по : {}", directorId, filmsByDirector.size(), sortBy);
+        log.info("Запроc фильмов по режиссёру с id => {} количество фильмов => {} отсортированных по => {}", directorId, filmsByDirector.size(), sortBy);
 
         return filmsByDirector;
 
+    }
+
+    public List<Film> getFilmsBySearch(String query, String by) {
+
+        final List<Film> filmsBySearch = filmStorage.getFilmsBySearch(query, by);
+
+        log.info("Запроc фильмов по ключевому слову => {} и параметру => {} количество => {}", query, by, filmsBySearch.size());
+
+        return filmsBySearch;
+    }
+
+    public List<Film> getCommonFilms(@Positive long userId, @Positive long otherId) throws NotFoundException {
+
+        userStorage.checkUserById(userId);
+
+        userStorage.checkUserById(otherId);
+
+        final List<Film> commonFilms = filmStorage.getCommonFilms(userId, otherId);
+
+        log.info("Запроc общих фильмов двух пользователей userId => {} и otherId => {}, количество => {}", userId, otherId, commonFilms.size());
+
+        return commonFilms;
     }
 
 }

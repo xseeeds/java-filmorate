@@ -153,32 +153,24 @@ public class DbGenreStorageImpl implements GenreStorage {
     }
 
     @Override
-    public void checkGenreByName(Genre genre) throws ConflictException {
+    public void checkGenreByName(String genre, boolean ifExist) throws NotFoundException, ConflictException {
 
-        final boolean newGenre = (genre.getId() == null);
+        String sql =
+                "SELECT id " +
+                        "FROM genres " +
+                        "WHERE lower(name) like lower(?)";
 
-        String sql;
-        Object[] params;
+        final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql, genre);
 
-        if (newGenre) {
-            sql =
-                    "SELECT id " +
-                            "FROM genres " +
-                            "WHERE name = ?";
-            params = new Object[]{genre.getName()};
+        if (ifExist) {
+            if (rows.next()) {
+                throw new ConflictException("Жанр => " + genre + " уже существует по id => " + rows.getString("id"));
+            }
+
         } else {
-            sql =
-                    "SELECT id " +
-                            "FROM genres " +
-                            "WHERE name = ? " +
-                            "AND id <> ?";
-            params = new Object[]{genre.getName(), genre.getId()};
-        }
-
-        final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql, params);
-
-        if (rows.next()) {
-            throw new ConflictException("Жанр => " + genre.getName() + " уже существует по id => " + rows.getString("id"));
+            if (!rows.next()) {
+                throw new NotFoundException("Жанр => " + genre + " не существует");
+            }
         }
 
     }

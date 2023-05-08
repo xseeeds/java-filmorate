@@ -335,7 +335,7 @@ public class DbUserStorageImpl implements UserStorage {
                 newUserLogin);
 
         if (rows.next()) {
-            throw new ConflictException("Такой пользователь с login: " + newUserLogin
+            throw new ConflictException("Такой пользователь с login => " + newUserLogin
                     + " уже существует, по id => " + rows.getLong("id") + " для обновления используй PUT запрос");
         }
     }
@@ -352,7 +352,7 @@ public class DbUserStorageImpl implements UserStorage {
                 newUserEmail);
 
         if (rows.next()) {
-            throw new ConflictException("Такой пользователь с email:" + newUserEmail
+            throw new ConflictException("Такой пользователь с email => " + newUserEmail
                     + " уже существует, по id => " + rows.getLong("id") + " для обновления используй PUT запрос");
         }
     }
@@ -372,7 +372,7 @@ public class DbUserStorageImpl implements UserStorage {
             final long existentId = rows.getLong("id");
 
             if (existentId != updateUserId) {
-                throw new ConflictException("Такой пользователь с login: "
+                throw new ConflictException("Такой пользователь с login => "
                         + updateUserLogin + " уже существует, по id => " + existentId);
             }
         }
@@ -393,7 +393,7 @@ public class DbUserStorageImpl implements UserStorage {
             final long existentId = rows.getLong("id");
 
             if (existentId != updateUserId) {
-                throw new ConflictException("Такой пользователь с email: " + updateUserEmail
+                throw new ConflictException("Такой пользователь с email => " + updateUserEmail
                         + " уже существует, по id => " + existentId);
             }
         }
@@ -402,35 +402,32 @@ public class DbUserStorageImpl implements UserStorage {
     @Override
     public List<Film> getRecommendationsFilmsByUserId(long userId) {
 
-        final String sqlGetFilmsByUsersWithSimilarLikes =
+        final String sqlGetFilmsByUsersWithSimilarLikesMark =
                 "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
                         "FROM films f " +
                         "JOIN user_film_like ufl ON ufl.film_id = f.id " +
                         "AND ufl.user_id IN " +
                                             "( " +
-                                            "SELECT ulf1.user_id " +
-                                            "FROM user_film_like ulf1 " +
-                                            "WHERE ulf1.film_id IN " +
-                                                                    "( " +
-                                                                    "SELECT ulf2.film_id " +
-                                                                    "FROM user_film_like ulf2 " +
-                                                                    "WHERE ulf2.user_id = ? " +
-                                                                    ") " +
-                                            "AND ulf1.user_id <> ? " +
-                                            "GROUP BY ulf1.user_id " +
-                                            "HAVING COUNT(ulf1.user_id) >= 1 " +
+                                            "SELECT ufl2.user_id " +
+                                            "FROM user_film_like ufl1 " +
+                                            "JOIN user_film_like ufl2 ON ufl1.film_id = ufl2.film_id " +
+                                            "AND ufl1.user_id = ? " +
+                                            "AND ufl2.user_id <> ? " +
+                                            "GROUP BY ufl1.user_id, ufl2.user_id " +
+                                            "HAVING AVG(ABS(ufl1.mark - ufl2.mark)) < 3 " + //<значение_близости_оценки_пользователей>
                                             ") " +
+                        "AND ufl.user_id <> ? " +
+                        "AND ufl.mark > 5 " +
                         "AND f.id NOT IN " +
                                         "( " +
-                                         "SELECT ufl3.film_id " +
-                                         "FROM user_film_like ufl3 " +
-                                         "WHERE ufl3.user_id = ? " +
+                                        "SELECT ufl3.film_id " +
+                                        "FROM user_film_like ufl3 " +
+                                        "WHERE ufl3.user_id = ? " +
                                         ") " +
-                        "GROUP BY f.id " +
-                        "ORDER BY COUNT(ufl.user_id) DESC";
+                        "ORDER BY f.rate DESC";
 
-        return jdbcTemplate.query(sqlGetFilmsByUsersWithSimilarLikes,
-                filmStorage::makeFilm, userId, userId, userId);
+        return jdbcTemplate.query(sqlGetFilmsByUsersWithSimilarLikesMark,
+                filmStorage::makeFilm, userId, userId, userId, userId);
     }
 
     private User makeUser(ResultSet resultSet, int rowNum) throws SQLException {
@@ -500,7 +497,7 @@ public class DbUserStorageImpl implements UserStorage {
                         "(user_id, friend_id, status) " +
                         "VALUES (?, ?, ?)";
 
-                jdbcTemplate.batchUpdate(sqlQuery, new BatchPreparedStatementSetter() {
+        jdbcTemplate.batchUpdate(sqlQuery, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 ps.setLong(1, user.getId());

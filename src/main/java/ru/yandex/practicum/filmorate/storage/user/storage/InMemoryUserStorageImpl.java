@@ -238,7 +238,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userLogins.get(newUserLogin);
 
         if (existentId != null) {
-            throw new ConflictException("Такой пользователь с login: " + newUserLogin
+            throw new ConflictException("Такой пользователь с login => " + newUserLogin
                     + " уже существует, по id => " + existentId + " для обновления используй PUT запрос");
         }
     }
@@ -249,7 +249,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userEmails.get(newUserEmail);
 
         if (existentId != null) {
-            throw new ConflictException("Такой пользователь с email:" + newUserEmail
+            throw new ConflictException("Такой пользователь с email => " + newUserEmail
                     + " уже существует, по id => " + existentId + " для обновления используй PUT запрос");
         }
     }
@@ -260,7 +260,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userLogins.get(updateUserLogin);
 
         if (existentId != null && existentId != updateUserId) {
-            throw new ConflictException("Такой пользователь с login: " + updateUserLogin
+            throw new ConflictException("Такой пользователь с login => " + updateUserLogin
                     + " уже существует, по id => " + existentId);
         }
 
@@ -272,7 +272,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userEmails.get(updateUserEmail);
 
         if (existentId != null && existentId != updateUserId) {
-            throw new ConflictException("Такой пользователь с email: " + updateUserEmail
+            throw new ConflictException("Такой пользователь с email => " + updateUserEmail
                     + " уже существует, по id => " + existentId);
         }
     }

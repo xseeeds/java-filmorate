@@ -21,7 +21,7 @@ public interface FilmStorage {
 
     List<Film> getAllFilm();
 
-    List<Film> getFilmByPopular(int count);
+    List<Film> getFilmByPopular(int count, String genre, Integer year);
 
     void removeFilmById(long filmId);
 
@@ -33,11 +33,15 @@ public interface FilmStorage {
 
     void checkFilmLikeByUserId(long filmId, long userId, boolean addOrRemove) throws ConflictException, NotFoundException;
 
-    void addUserLikeOnFilm(long filmId, long userId, int mark);
+    void addUserMarkOnFilm(long filmId, long userId, int mark);
 
-    void removeUserLikeOnFilm(long filmId, long userId, int mark);
+    void removeUserMarkOnFilm(long filmId, long userId, int mark);
 
     List<Film> getFilmsByDirector(long directorId, String sortBy) throws NotFoundException;
+
+    List<Film> getCommonFilms(long userId, long otherId);
+
+    List<Film> getFilmsBySearch(String query, String by);
 
     Film makeFilm(ResultSet resultSet, int rowNumber) throws SQLException;
 }

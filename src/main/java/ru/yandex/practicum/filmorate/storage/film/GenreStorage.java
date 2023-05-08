@@ -26,7 +26,7 @@ public interface GenreStorage {
 
     void checkGenreById(long id) throws NotFoundException;
 
-    void checkGenreByName(Genre genre) throws ConflictException;
+    void checkGenreByName(String genre, boolean ifExist) throws NotFoundException, ConflictException;
 
     void removeGenreById(long id) throws NotFoundException;
 

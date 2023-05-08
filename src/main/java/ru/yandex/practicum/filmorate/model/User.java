@@ -14,7 +14,7 @@ import java.util.Map;
 @Jacksonized
 public class User {
 
-    @Min(value = 0, message = "должно быть больше 0")
+    @Positive
     Long id;
 
     @Email

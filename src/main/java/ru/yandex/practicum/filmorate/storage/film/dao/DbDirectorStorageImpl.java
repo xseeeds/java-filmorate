@@ -99,20 +99,20 @@ public class DbDirectorStorageImpl implements DirectorStorage {
 
         final boolean newDirector = (director.getId() == null);
 
-        String sql;
-        Object[] params;
+        final String sql;
+        final Object[] params;
 
         if (newDirector) {
             sql =
                     "SELECT id " +
                             "FROM directors " +
-                            "WHERE name = ?";
+                            "WHERE lower(name) like lower(?)";
             params = new Object[]{director.getName()};
         } else {
             sql =
                     "SELECT id " +
                             "FROM directors " +
-                            "WHERE name = ? " +
+                            "WHERE lower(name) like lower(?) " +
                             "AND id <> ?";
             params = new Object[]{director.getName(), director.getId()};
         }

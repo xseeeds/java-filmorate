@@ -127,7 +127,7 @@ public class FilmGenreDatabaseTest {
                 .isInstanceOf(
                         ConflictException.class)
                 .hasMessageContaining(
-                        "Такой фильм с именем => The Shawshank Redemption уже существует");
+                        "Такой фильм с именем => The Shawshank Redemption и датой релиза => 1994-09-22 уже существует по id => 1");
     }
 
     @Test
@@ -162,31 +162,31 @@ public class FilmGenreDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        filmStorage.addUserLikeOnFilm(2L, 1L, 3);
+        filmStorage.addUserMarkOnFilm(2L, 1L, 3);
 
         assertThat(
-                new ArrayList<>(filmStorage.getFilmByPopular(10)).get(0))
+                new ArrayList<>(filmStorage.getFilmByPopular(10, null, null)).get(0))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Godfather");
 
         assertThat(
-                new ArrayList<>(filmStorage.getFilmByPopular(10)).get(1))
+                new ArrayList<>(filmStorage.getFilmByPopular(10, null, null)).get(1))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Shawshank Redemption");
 
 
-        filmStorage.removeUserLikeOnFilm(2L, 1L, 3);
-        filmStorage.addUserLikeOnFilm(1L, 1L,  7);
+        filmStorage.removeUserMarkOnFilm(2L, 1L, 3);
+        filmStorage.addUserMarkOnFilm(1L, 1L,  7);
 
         assertThat(
                 new ArrayList<>(
-                        filmStorage.getFilmByPopular(10)).get(0))
+                        filmStorage.getFilmByPopular(10, null, null)).get(0))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Shawshank Redemption");
 
         assertThat(
                 new ArrayList<>(
-                        filmStorage.getFilmByPopular(10)).get(1))
+                        filmStorage.getFilmByPopular(10, null, null)).get(1))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Godfather");
 
@@ -247,23 +247,18 @@ public class FilmGenreDatabaseTest {
                 .build());
 
         assertThatThrownBy(
-                () -> genreStorage.checkGenreByName(Genre
-                        .builder()
-                        .name("Update genre")
-                        .build()))
+                () -> genreStorage.checkGenreByName("Update genre", true))
                 .isInstanceOf(
                         ConflictException.class)
                 .hasMessageContaining(
                         "Жанр => Update genre уже существует по id => 7");
 
 
-        assertThatNoException()
-                .isThrownBy(
-                        () -> genreStorage.checkGenreByName(
-                                Genre
-                                        .builder()
-                                        .name("Some genre")
-                                        .build()));
+        assertThatThrownBy(
+                        () -> genreStorage.checkGenreByName("Some genre", false))
+                .isInstanceOf(
+                        NotFoundException.class)
+                .hasMessageContaining("Жанр => Some genre не существует");
 
     }
 

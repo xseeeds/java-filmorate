@@ -9,8 +9,11 @@ import java.sql.SQLException;
 @Data
 @Builder
 public class UserFriends {
+
     private long id;
+
     private long friendsId;
+
     private Status status;
 
     public UserFriends makeUserFriend(ResultSet resultSet) throws SQLException {

@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.model.Violation;
 
 import javax.validation.ConstraintViolationException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,11 +58,21 @@ public class ErrorHandler {
             final SQLIntegrityConstraintViolationException e
     ) {
         log.error(e.getMessage(), e);
-        final String[] message = e.getMessage().split("\\)");
+        int endIndex = nthIndexOf(e.getMessage(), ")", 2);
         return new ErrorResponse(HttpStatus.CONFLICT.toString(),
-                "errorSQLIntegrityConstraintViolationException", message[0] + ") " + message[1] + ")");
+                "errorSQLIntegrityConstraintViolationException", e.getMessage().substring(0, endIndex + 1));
     }
 
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(SQLSyntaxErrorException.class)
+    public ErrorResponse errorConflictException(
+            final SQLSyntaxErrorException e
+    ) {
+        log.error(e.getMessage(), e);
+        int endIndex = nthIndexOf(e.getMessage(), "\n", 1);
+        return new ErrorResponse(HttpStatus.CONFLICT.toString(),
+                "errorSQLSyntaxErrorException", e.getMessage().substring(0, endIndex));
+    }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException.class)
@@ -98,5 +109,27 @@ public class ErrorHandler {
                 )
                 .collect(Collectors.toList());
         return new ValidationErrorResponse(errorRequestBody);
+    }
+
+/*
+    @ExceptionHandler()
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse errorInternalServerErrorException(final Throwable e) {
+        return new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
+                "errorInternalServerErrorException", "Произошла непредвиденная ошибка.");
+    }
+*/
+
+
+    private int nthIndexOf(String str, String subStr, int count) {
+        int index = -1;
+        while (count > 0) {
+            index = str.indexOf(subStr, index + 1);
+            if (index == -1) {
+                return -1;
+            }
+            count--;
+        }
+        return index;
     }
 }

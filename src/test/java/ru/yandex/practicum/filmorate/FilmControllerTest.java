@@ -42,7 +42,8 @@ public class FilmControllerTest {
             .duration(100)
             .build();
     private final Film film1WithId = Film
-            .builder().id(1L)
+            .builder()
+            .id(1L)
             .name("nisi eiusmod")
             .description("adipisicing")
             .releaseDate(LocalDate.of(1967, 3, 25))

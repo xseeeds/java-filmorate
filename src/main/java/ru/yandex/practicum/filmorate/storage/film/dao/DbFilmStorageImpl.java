@@ -52,7 +52,9 @@ public class DbFilmStorageImpl implements FilmStorage {
         final long id = simpleJdbcInsert.executeAndReturnKey(filmToMap).longValue();
         film.setId(id);
 
-        updateMpaByFilm(film);
+        if (film.getMpa() != null) {
+            updateMpaByFilm(film);
+        }
 
         updateAllDirectorByFilm(film);
 
@@ -76,13 +78,17 @@ public class DbFilmStorageImpl implements FilmStorage {
                 film.getReleaseDate(),
                 film.getId());
 
-        updateMpaByFilm(film);
+        if (film.getMpa() != null) {
+            updateMpaByFilm(film);
+        }
 
         updateAllDirectorByFilm(film);
 
         updateAllGenresByFilmId(film);
 
-        updateAllUserLikeByFilmId(film);
+        if (!film.getUserFilmLike().isEmpty()) {
+            updateAllUserLikeByFilmId(film);
+        }
 
         return film;
     }
@@ -122,19 +128,42 @@ public class DbFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public List<Film> getFilmByPopular(int count) {
+    public List<Film> getFilmByPopular(int count, String genre, Integer year) {
+
+        final Object[] params;
+
+        if (genre != null && year != null) {
+            params = new Object[]{"%" + genre + "%", year, count};
+        } else if (genre != null) {
+            params = new Object[]{"%" + genre + "%", count};
+        } else if (year != null) {
+            params = new Object[]{year, count};
+        } else {
+            params = new Object[]{count};
+        }
 
         final String sql =
-                "SELECT f.id, f.name, f.description, f.duration, f.release_date, f.rate " +
-                        "FROM films AS f " +
-                        "LEFT JOIN user_film_like AS ufl ON f.id = ufl.film_id " +
-                        "GROUP BY f.id " +
-                        "ORDER BY count(ufl.film_id) DESC " +
+                "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                        "FROM films f " +
+                        (genre != null ?
+                                "JOIN film_genre fg ON fg.film_id = f.id " +
+                                        "AND fg.genre_id IN " +
+                                                            "( " +
+                                                            "SELECT id " +
+                                                            "FROM genres " +
+                                                            "WHERE lower(name) like lower(?) " +
+                                                            ") "
+                                : ""
+                        ) +
+                        (year != null ?
+                                "WHERE YEAR(f.release_date) = ? "
+                                : ""
+                        ) +
+                        "GROUP BY f.id, f.rate " +
+                        "ORDER BY f.rate DESC " +
                         "LIMIT ?";
 
-        return jdbcTemplate.query(sql,
-                this::makeFilm,
-                count);
+        return jdbcTemplate.query(sql, this::makeFilm, params);
     }
 
     @Override
@@ -197,19 +226,19 @@ public class DbFilmStorageImpl implements FilmStorage {
 
         final boolean newFilm = (film.getId() == null);
 
-        String sql;
-        Object[] params;
+        final String sql;
+        final Object[] params;
 
         if (newFilm) {
             sql = "SELECT id " +
                     "FROM films " +
-                    "WHERE name = ? " +
+                    "WHERE lower(name) like lower(?) " +
                     "AND release_date = ?";
             params = new Object[]{film.getName(), film.getReleaseDate()};
         } else {
             sql = "SELECT id " +
                     "FROM films " +
-                    "WHERE name = ? " +
+                    "WHERE lower(name) like lower(?) " +
                     "AND release_date = ? " +
                     "AND id <> ?";
             params = new Object[]{film.getName(), film.getReleaseDate(), film.getId()};
@@ -230,7 +259,7 @@ public class DbFilmStorageImpl implements FilmStorage {
         final String sql =
                 "SELECT user_id " +
                         "FROM user_film_like " +
-                        "WHERE user_id = ?" +
+                        "WHERE user_id = ? " +
                         "AND film_id =?";
 
         final SqlRowSet rows = jdbcTemplate.queryForRowSet(sql,
@@ -250,7 +279,7 @@ public class DbFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public void addUserLikeOnFilm(long filmId, long userId, int mark) {
+    public void addUserMarkOnFilm(long filmId, long userId, int mark) {
 
         if (mark > 0) {
 
@@ -261,6 +290,7 @@ public class DbFilmStorageImpl implements FilmStorage {
 
             jdbcTemplate.update(sql,
                     userId, filmId, mark);
+
         } else {
 
             final String sql =
@@ -271,10 +301,12 @@ public class DbFilmStorageImpl implements FilmStorage {
             jdbcTemplate.update(sql,
                     userId, filmId);
         }
+
+        setRateFilmByMarks(filmId);
     }
 
     @Override
-    public void removeUserLikeOnFilm(long filmId, long userId, int mark) {
+    public void removeUserMarkOnFilm(long filmId, long userId, int mark) {
 
         if (mark > 0) {
 
@@ -286,6 +318,7 @@ public class DbFilmStorageImpl implements FilmStorage {
 
             jdbcTemplate.update(sql,
                     userId, filmId, mark);
+
         } else {
 
             final String sql =
@@ -296,12 +329,14 @@ public class DbFilmStorageImpl implements FilmStorage {
             jdbcTemplate.update(sql,
                     userId, filmId);
         }
+
+        setRateFilmByMarks(filmId);
     }
 
     @Override
     public List<Film> getFilmsByDirector(long directorId, String sortBy) throws NotFoundException {
 
-        String sqlQuery;
+        final String sqlQuery;
 
         if (sortBy.equalsIgnoreCase("year")) {
 
@@ -318,14 +353,77 @@ public class DbFilmStorageImpl implements FilmStorage {
                             "FROM films f " +
                             "JOIN film_director fd ON fd.film_id = f.id AND fd.director_id = ? " +
                             "LEFT JOIN user_film_like ufl ON f.id = ufl.film_id " +
-                            "GROUP BY f.id " +
-                            "ORDER BY COUNT(ufl.user_id) DESC";
+                            "GROUP BY f.id, f.rate " +
+                            "ORDER BY f.rate DESC";
 
         } else {
             throw new NotFoundException("Тип сортирорки " + sortBy + " не существует!");
         }
 
         return jdbcTemplate.query(sqlQuery, this::makeFilm, directorId);
+    }
+
+    @Override
+    public List<Film> getCommonFilms(long userId, long otherId) {
+
+        final String sqlQuery =
+                "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                        "FROM films f " +
+                        "JOIN user_film_like AS ufl1 ON ufl1.film_id = f.id AND ufl1.user_id = ? " +
+                        "JOIN user_film_like AS ufl2 ON ufl2.film_id = ufl1.film_id AND ufl2.user_id = ? " +
+                        "GROUP BY f.id, f.rate " +
+                        "ORDER BY f.rate DESC";
+
+        return jdbcTemplate.query(sqlQuery, this::makeFilm, userId, otherId);
+    }
+
+    public List<Film> getFilmsBySearch(String query, String by) {
+
+        final Object[] params;
+        final String sqlQuery;
+
+        if (by.equalsIgnoreCase("director")) {
+
+            sqlQuery =
+                    "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                            "FROM films f " +
+                            "JOIN film_director fd ON fd.film_id = f.id " +
+                            "JOIN directors d ON d.id = fd.director_id " +
+                            "AND lower (d.name) LIKE lower(?) " +
+                            "GROUP BY f.id, d.name, f.rate " +
+                            "ORDER BY f.rate DESC";
+
+            params = new Object[]{"%" + query + "%"};
+
+        } else if (by.equalsIgnoreCase("title")) {
+
+            sqlQuery =
+                    "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                            "FROM films f " +
+                            "WHERE lower (f.name) LIKE lower (?) " +
+                            "ORDER BY f.rate DESC";
+
+            params = new Object[]{"%" + query + "%"};
+
+        } else if (by.equalsIgnoreCase("director,title") || by.equalsIgnoreCase("title,director")) {
+
+            sqlQuery =
+                    "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                            "FROM films f " +
+                            "JOIN film_director fd on fd.film_id = f.id " +
+                            "JOIN directors d on fd.director_id = d.id " +
+                            "AND lower (d.name) LIKE lower(?) " +
+                            "OR lower(f.name) LIKE lower(?) " +
+                            "GROUP BY f.id , f.rate, d.name " +
+                            "ORDER BY f.rate DESC";
+
+            params = new Object[]{"%" + query + "%", "%" + query + "%"};
+
+        } else {
+            throw new NotFoundException("Поиск по параметру " + by + " не предусмотрен");
+        }
+
+        return jdbcTemplate.query(sqlQuery, this::makeFilm, params);
     }
 
     @Override
@@ -419,6 +517,40 @@ public class DbFilmStorageImpl implements FilmStorage {
 
     private Map<Long, Integer> makeMark(ResultSet rs, int rowNum) throws SQLException {
         return Map.of(rs.getLong("user_id"), rs.getInt("mark"));
+    }
+
+    private void updateAllDirectorByFilm(Film film) {
+
+        jdbcTemplate.update("DELETE FROM film_director " +
+                        "WHERE film_id = ?",
+                film.getId());
+
+        //TODO преобразование id из long в int для batchUpdate
+
+        final List<Integer> directorIds = film
+                .getDirectors()
+                .stream()
+                .map(
+                        director -> director.getId().intValue())
+                .collect(
+                        Collectors.toList());
+
+        final String sqlQuery =
+                "INSERT INTO film_director " +
+                        "(film_id, director_id) " +
+                        "VALUES (?, ?)";
+        jdbcTemplate.batchUpdate(sqlQuery, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, film.getId());
+                ps.setLong(2, directorIds.get(i));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return directorIds.size();
+            }
+        });
     }
 
     private void updateMpaByFilm(Film film) {
@@ -552,38 +684,33 @@ public class DbFilmStorageImpl implements FilmStorage {
         });
     }
 
-    private void updateAllDirectorByFilm(Film film) {
+    private void setRateFilmByMarks(long filmId) {
 
-        jdbcTemplate.update("DELETE FROM film_director " +
-                        "WHERE film_id = ?",
-                film.getId());
+        final String getRate =
+                "SELECT AVG(mark) AS rate " +
+                        "FROM user_film_like " +
+                        "WHERE film_id = ?";
 
-        //TODO преобразование id из long в int для batchUpdate
+        final String setRate =
+                "UPDATE films " +
+                        "SET rate = ? " +
+                        "WHERE id = ?";
 
-        final List<Integer> directorIds = film
-                .getDirectors()
-                .stream()
-                .map(
-                        director -> director.getId().intValue())
-                .collect(
-                        Collectors.toList());
 
-        final String sqlQuery =
-                "INSERT INTO film_director " +
-                        "(film_id, director_id) " +
-                        "VALUES (?, ?)";
-        jdbcTemplate.batchUpdate(sqlQuery, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ps.setLong(1, film.getId());
-                ps.setLong(2, directorIds.get(i));
-            }
+        SqlRowSet rows = jdbcTemplate.queryForRowSet(getRate, filmId);
 
-            @Override
-            public int getBatchSize() {
-                return directorIds.size();
-            }
-        });
+        if (rows.next()) {
+
+            final float filmRate = rows.getFloat("rate");
+
+            jdbcTemplate.update(setRate, filmRate, filmId);
+
+            log.info("Рейтинг фильма с id => {} обновлен rate => {}", filmId, filmRate);
+
+        } else {
+
+            log.info("Рейтинг фильма с id => {} не обновлен, нет оценок пользователей к фильму", filmId);
+        }
     }
 }
 

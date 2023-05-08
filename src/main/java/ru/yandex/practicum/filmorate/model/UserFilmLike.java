@@ -9,8 +9,11 @@ import java.sql.SQLException;
 @Data
 @Builder
 public class UserFilmLike {
+
     private int userId;
+
     private int friendsId;
+
     private int estimation;
 
     public UserFilmLike makeUserFilmLike(ResultSet resultSet) throws SQLException {

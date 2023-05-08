@@ -1,27 +1,33 @@
 package ru.yandex.practicum.filmorate.storage.film.storage;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
-
+@Slf4j
 @Component
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class InMemoryFilmStorageImpl implements FilmStorage {
     private final TreeSet<Film> films = new TreeSet<>(Comparator
-            .comparing(Film::getLikesSize)
+            .comparing(Film::getRate)
             .thenComparing(Film::getName)
             .thenComparing(Film::getReleaseDate)
             .thenComparing(Film::getDuration));
@@ -60,7 +66,7 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
                 .stream()
                 .filter(f -> f.getId() == filmId)
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException("Такой фильм с id: " + filmId + " не существует"));
+                .orElseThrow(() -> new NotFoundException("Такой фильм с id => " + filmId + " не существует"));
     }
 
     @Override
@@ -69,9 +75,35 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public List<Film> getFilmByPopular(int count) {
+    public List<Film> getFilmByPopular(int count, String genre, Integer year) {
+
         return films
                 .stream()
+                .filter(film -> {
+                    if (genre != null && year != null) {
+
+                        final Optional<Genre> filmGenre = film.getGenres()
+                                .stream()
+                                .filter(fG -> fG.getName().equalsIgnoreCase(genre))
+                                .findFirst();
+
+                        return film.getReleaseDate().getYear() == year &&  filmGenre.isPresent();
+
+                    } else if (genre != null) {
+
+                        final Optional<Genre> filmGenre = film.getGenres()
+                                .stream()
+                                .filter(fG -> fG.getName().equalsIgnoreCase(genre))
+                                .findFirst();
+
+                        return filmGenre.isPresent();
+
+                    } else if (year != null) {
+
+                        return film.getReleaseDate().getYear() == year;
+                    }
+                    return false;
+                })
                 .limit(count)
                 .collect(toList());
     }
@@ -83,7 +115,7 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
                 .filter(f -> f.getId() == filmId)
                 .findFirst()
                 .orElseThrow(() ->
-                        new NotFoundException("Такой фильм с id: " + filmId + " не существует")));
+                        new NotFoundException("Такой фильм с id =>" + filmId + " не существует")));
         idsFilms.remove(filmId);
     }
 
@@ -101,7 +133,7 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
         final Long floor = idsFilms.floor(filmId);
 
         if (!Objects.equals(ceil, floor) || ceil == null) {
-            throw new NotFoundException("Такой фильм с id: " + filmId + " не существует");
+            throw new NotFoundException("Такой фильм с id => " + filmId + " не существует");
         }
     }
 
@@ -139,25 +171,138 @@ public class InMemoryFilmStorageImpl implements FilmStorage {
     }
 
     @Override
-    public void addUserLikeOnFilm(long filmId, long userId, int mark) {
-        getFilmById(filmId).getUserFilmLike().put(userId, mark);
+    public void addUserMarkOnFilm(long filmId, long userId, int mark) {
+
+        if (mark > 0) {
+            getFilmById(filmId).getUserFilmLike().put(userId, mark);
+        } else {
+            getFilmById(filmId).getUserFilmLike().put(userId, null);
+        }
+        setRateFilmByMarks(filmId);
     }
 
     @Override
-    public void removeUserLikeOnFilm(long filmId, long userId, int mark) {
+    public void removeUserMarkOnFilm(long filmId, long userId, int mark) {
         getFilmById(filmId).getUserFilmLike().remove(userId);
+        setRateFilmByMarks(filmId);
+    }
+
+    @Override
+    public List<Film> getFilmsByDirector(long directorId, String sortBy) throws ConflictException {
+
+        final List<Film> filmList = new ArrayList<>();
+
+        if (sortBy.equalsIgnoreCase("year")) {
+
+            final Set<Film> filmSetByReleaseDate = new TreeSet<>(Comparator.comparing(Film::getReleaseDate));
+
+            filmSetByReleaseDate.addAll(films
+                    .stream()
+                    .filter(
+                            film -> {
+                                final Optional<Director> filmDirector = film.getDirectors()
+                                        .stream()
+                                        .filter(fD -> fD.getId() == directorId)
+                                        .findFirst();
+
+                                return filmDirector.isPresent();
+                            })
+                    .collect(
+                            toSet()));
+
+            filmList.addAll(filmSetByReleaseDate);
+
+        } else if (sortBy.equalsIgnoreCase("likes")) {
+
+            filmList.addAll(films
+                    .stream()
+                    .filter(
+                            film -> {
+                                final Optional<Director> filmDirector = film.getDirectors()
+                                        .stream()
+                                        .filter(fD -> fD.getId() == directorId)
+                                        .findFirst();
+
+                                return filmDirector.isPresent();
+                            })
+                    .collect(
+                            toSet()));
+        } else {
+            throw new NotFoundException("Тип сортирорки " + sortBy + " не существует!");
+        }
+
+        return filmList;
+    }
+
+    @Override
+    public List<Film> getCommonFilms(long userId, long otherId) {
+
+        return films
+                .stream()
+                .filter(film -> film.getUserFilmLike().containsKey(userId)
+                        && film.getUserFilmLike().containsKey(otherId))
+                .collect(toList());
     }
 
     //TODO можно попрактивоться
 
     @Override
-    public List<Film> getFilmsByDirector(long directorId, String sortBy) throws ConflictException {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /getFilmsByDirector не реализован.");
+    public List<Film> getFilmsBySearch(String query, String by) {
+
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /getFilmsBySearch не реализован.");
+
+/*
+        final List<Film> filmsSearch;
+
+        if (by.equalsIgnoreCase("director")) {
+
+            films = filmStorage.findByDirector(queryAddSymbols);
+
+        } else if (by.equalsIgnoreCase("title")) {
+
+            films = filmStorage.findByName(queryAddSymbols);
+
+        } else if (by.equalsIgnoreCase("director,title") || by.equalsIgnoreCase("title,director")) {
+
+            films = filmStorage.findByDirectorAndName(queryAddSymbols);
+
+        } else throw new NotfoundException("Поиск по параметру " + by + " не предусмотрен");
+
+*/
+
     }
 
     @Override
     public Film makeFilm(ResultSet resultSet, int rowNumber) throws SQLException {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /makeFilm не реализован.");
+    }
+
+    private void setRateFilmByMarks(long filmId) {
+
+        final Film film = getFilmById(filmId);
+
+        if (!film.getUserFilmLike().isEmpty()) {
+
+            AtomicReference<Float> filmRate = new AtomicReference<>((float) 0);
+            AtomicInteger count = new AtomicInteger();
+
+            film.getUserFilmLike()
+                    .values()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .forEach(
+                            mark -> {
+                filmRate.updateAndGet(v -> v + mark);
+                count.getAndIncrement();
+            });
+
+            film.setRate(filmRate.get() / count.get());
+            log.info("Рейтинг фильма с id => {} обновлен rate => {}", filmId, filmRate);
+
+        } else {
+
+            log.info("Рейтинг фильма с id => {} не обновлен, нет оценок пользователей к фильму", filmId);
+        }
     }
 
     private long getNextId() {
