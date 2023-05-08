@@ -5,12 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ru.yandex.practicum.filmorate.exception.BadRequestException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.service.UserService;
 
-
-import java.util.Collection;
+import java.util.List;
 
 
 @RestController
@@ -39,7 +39,7 @@ public class UserController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public Collection<User> allUser() {
+    public List<User> allUser() {
         return userService.getAllUser();
     }
 
@@ -73,13 +73,18 @@ public class UserController {
 
     @GetMapping("/{userId}/friends")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<User> getFriends(@PathVariable long userId) {
+    public List<User> getFriends(@PathVariable long userId) {
         return userService.getAllFriendsByUser(userId);
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<User> getCommonFriends(@PathVariable long userId, @PathVariable long otherId) {
+    public List<User> getCommonFriends(@PathVariable long userId, @PathVariable long otherId) {
         return userService.getCommonFriendsByUser(userId, otherId);
+    }
+
+    @GetMapping("/{userId}/recommendations")
+    public List<Film> getUsersRecommendations(@PathVariable long userId) {
+        return userService.getUsersRecommendations(userId);
     }
 }

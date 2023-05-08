@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -15,7 +16,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Positive;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 import static ru.yandex.practicum.filmorate.model.Status.*;
 
@@ -27,39 +28,38 @@ import static ru.yandex.practicum.filmorate.model.Status.*;
 public class UserService {
     private final UserStorage userStorage;
 
-
     @Validated
-    public User createUser(@Valid User createdUser) throws ConflictException {
+    public User createUser(@Valid User user) throws ConflictException {
 
-        userStorage.checkUserLogin(createdUser.getLogin());
-        userStorage.checkUserEmail(createdUser.getEmail());
+        userStorage.checkUserLogin(user.getLogin());
+        userStorage.checkUserEmail(user.getEmail());
 
-        final User user = userStorage.createUser(createdUser);
+        final User createdUser = userStorage.createUser(user);
 
-        log.info("newUser {}", user);
+        log.info("newUser {}", createdUser);
 
-        return user;
+        return createdUser;
     }
 
     @Validated
-    public User updateUser(@Valid User updatedUser) throws NotFoundException, ConflictException {
+    public User updateUser(@Valid User user) throws NotFoundException, ConflictException {
 
-        userStorage.checkUserById(updatedUser.getId());
-        userStorage.checkUserIdOnLogin(updatedUser.getLogin(), updatedUser.getId());
-        userStorage.checkUserIdOnEmail(updatedUser.getEmail(), updatedUser.getId());
+        userStorage.checkUserById(user.getId());
+        userStorage.checkUserIdOnLogin(user.getLogin(), user.getId());
+        userStorage.checkUserIdOnEmail(user.getEmail(), user.getId());
 
-        final User user = userStorage.updateUser(updatedUser);
+        final User updatedUser = userStorage.updateUser(user);
 
-        log.info("Пользователь обновлен {}", user);
+        log.info("Пользователь обновлен {}", updatedUser);
 
-        return user;
+        return updatedUser;
     }
 
-    public Collection<User> getAllUser() {
+    public List<User> getAllUser() {
 
-        final Collection<User> allUser = userStorage.getAllUser();
+        final List<User> allUser = userStorage.getAllUser();
 
-        log.info("Текущее количество пользователей : {}", allUser.size());
+        log.info("Текущее количество пользователей => {}", allUser.size());
 
         return allUser;
     }
@@ -68,7 +68,7 @@ public class UserService {
 
         final User user = userStorage.getUserById(userId);
 
-        log.info("Пользователь получен : {}", user);
+        log.info("Пользователь получен c id => {} =>>> {}", userId, user);
 
         return user;
     }
@@ -165,11 +165,11 @@ public class UserService {
         }
     }
 
-    public Collection<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException {
+    public List<User> getAllFriendsByUser(@Positive long userId) throws NotFoundException {
 
         userStorage.checkUserById(userId);
 
-        Collection<User> allFriends = new ArrayList<>();
+        List<User> allFriends = new ArrayList<>();
 
         try {
             userStorage.checkFriendByUserId(userId);
@@ -188,13 +188,13 @@ public class UserService {
         return allFriends;
     }
 
-    public Collection<User> getCommonFriendsByUser(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
+    public List<User> getCommonFriendsByUser(@Positive long userId, @Positive long otherId) throws NotFoundException, ConflictException {
 
         userStorage.checkUserById(userId);
 
         userStorage.checkUserById(otherId);
 
-        Collection<User> commonFriends = new ArrayList<>();
+        List<User> commonFriends = new ArrayList<>();
 
         try {
             userStorage.checkFriendByUserId(userId);
@@ -213,5 +213,16 @@ public class UserService {
                 userId, otherId, commonFriends.size());
 
         return commonFriends;
+    }
+
+    public List<Film> getUsersRecommendations(@Positive long userId) throws NotFoundException {
+
+        userStorage.checkUserById(userId);
+
+        final List<Film> recommendationsFilmsByUserId = userStorage.getRecommendationsFilmsByUserId(userId);
+
+        log.info("Фильм по рекомендации для пользователя по id => {} получены (кол-во) => {}", userId, recommendationsFilmsByUserId.size());
+
+        return recommendationsFilmsByUserId;
     }
 }

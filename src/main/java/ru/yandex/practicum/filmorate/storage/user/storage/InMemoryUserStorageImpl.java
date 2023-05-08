@@ -2,14 +2,18 @@ package ru.yandex.practicum.filmorate.storage.user.storage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 import static java.util.stream.Collectors.toList;
@@ -82,7 +86,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public User getUserById(long userId) {
+    public User getUserById(long userId) throws NotFoundException {
 
         final User user = users.get(userId);
 
@@ -94,9 +98,9 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllUser() {
+    public List<User> getAllUser() {
 
-        return users.values();
+        return new ArrayList<>(users.values());
     }
 
     @Override
@@ -193,7 +197,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllFriendsByUserId(long userId) {
+    public List<User> getAllFriendsByUserId(long userId) {
 
         return users.get(userId)
                 .getFriendsIdsStatus()
@@ -206,7 +210,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getCommonFriendsByUser(long userId, long otherUserId) {
+    public List<User> getCommonFriendsByUser(long userId, long otherUserId) {
 
         return users.get(userId)
                 .getFriendsIdsStatus()
@@ -234,7 +238,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userLogins.get(newUserLogin);
 
         if (existentId != null) {
-            throw new ConflictException("Такой пользователь с login: " + newUserLogin
+            throw new ConflictException("Такой пользователь с login => " + newUserLogin
                     + " уже существует, по id => " + existentId + " для обновления используй PUT запрос");
         }
     }
@@ -245,7 +249,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userEmails.get(newUserEmail);
 
         if (existentId != null) {
-            throw new ConflictException("Такой пользователь с email:" + newUserEmail
+            throw new ConflictException("Такой пользователь с email => " + newUserEmail
                     + " уже существует, по id => " + existentId + " для обновления используй PUT запрос");
         }
     }
@@ -256,7 +260,7 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userLogins.get(updateUserLogin);
 
         if (existentId != null && existentId != updateUserId) {
-            throw new ConflictException("Такой пользователь с login: " + updateUserLogin
+            throw new ConflictException("Такой пользователь с login => " + updateUserLogin
                     + " уже существует, по id => " + existentId);
         }
 
@@ -268,9 +272,16 @@ public class InMemoryUserStorageImpl implements UserStorage {
         final Long existentId = userEmails.get(updateUserEmail);
 
         if (existentId != null && existentId != updateUserId) {
-            throw new ConflictException("Такой пользователь с email: " + updateUserEmail
+            throw new ConflictException("Такой пользователь с email => " + updateUserEmail
                     + " уже существует, по id => " + existentId);
         }
+    }
+
+    //TODO интересная задачка потренироваться getRecommendationsFilmsByUserId)))
+
+    @Override
+    public List<Film> getRecommendationsFilmsByUserId(long userId) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Метод /getRecommendationsFilmsByUserId не реализован.");
     }
 
     private long getNextId() {

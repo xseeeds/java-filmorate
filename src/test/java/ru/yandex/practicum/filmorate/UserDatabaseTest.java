@@ -8,12 +8,15 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.Collection;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -25,14 +28,15 @@ import static ru.yandex.practicum.filmorate.model.Status.*;
 class UserDatabaseTest {
     private final UserStorage userStorage;
     private final UserService userService;
+    private final FilmStorage filmStorage;
 
     @AfterEach
-    public void ternDown() {
+    void ternDown() {
         userStorage.removeAllUser();
     }
 
     @Test
-    public void testUserCreateGetUpdateCheck() {
+    void testUserCreateGetUpdateCheck() {
 
         assertThatThrownBy(
                 () -> userStorage.checkUserById(1L))
@@ -49,7 +53,7 @@ class UserDatabaseTest {
                         "Такой пользователь c id => 1 не существует");
 
 
-        final Collection<User> users = userStorage.getAllUser();
+        final List<User> users = userStorage.getAllUser();
 
         assertThat(users)
                 .size()
@@ -63,7 +67,7 @@ class UserDatabaseTest {
                         .login("john")
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
-        User john = userStorage.getUserById(1L);
+        final User john = userStorage.getUserById(1L);
 
         assertThat(
                 john)
@@ -86,7 +90,7 @@ class UserDatabaseTest {
                 .hasFieldOrPropertyWithValue(
                         "name", "John Ono Lennon");
 
-        final Collection<User> allUsers = userStorage.getAllUser();
+        final List<User> allUsers = userStorage.getAllUser();
 
         assertThat(
                 allUsers)
@@ -96,7 +100,7 @@ class UserDatabaseTest {
     }
 
     @Test
-    public void testUserCheckLoginAndEmail() {
+    void testUserCheckLoginAndEmail() {
 
         userStorage.createUser(
                 User
@@ -112,7 +116,7 @@ class UserDatabaseTest {
                 .isThrownBy(
                         () -> userStorage.checkUserLogin("john"))
                             .withMessageMatching(
-                        "Такой пользователь с login: john уже существует, по id => 1 для обновления используй PUT запрос");
+                        "Такой пользователь с login => john уже существует, по id => 1 для обновления используй PUT запрос");
 
         assertThatNoException()
                 .isThrownBy(
@@ -124,7 +128,7 @@ class UserDatabaseTest {
                 .isThrownBy(
                         () -> userStorage.checkUserEmail("john@beatles.uk"))
                 .withMessageMatching(
-                        "Такой пользователь с email:john@beatles.uk уже существует, по id => 1 для обновления используй PUT запрос");
+                        "Такой пользователь с email => john@beatles.uk уже существует, по id => 1 для обновления используй PUT запрос");
 
         assertThatNoException()
                 .isThrownBy(
@@ -133,7 +137,7 @@ class UserDatabaseTest {
     }
 
     @Test
-    public void testUserFriend() {
+    void testUserFriend() {
 
         userStorage.createUser(
                 User
@@ -194,7 +198,7 @@ class UserDatabaseTest {
     }
 
     @Test
-    public void testFriendship() {
+    void testFriendship() {
 
         userStorage.createUser(
                 User
@@ -245,13 +249,13 @@ class UserDatabaseTest {
         assertThat(userStorage.checkStatusFriendship(1, 3, APPLICATION))
                 .isTrue();
 
-        final Collection<User> allFriends = userStorage.getAllFriendsByUserId(1);
+        final List<User> allFriends = userStorage.getAllFriendsByUserId(1);
 
         assertThat(allFriends)
                 .size()
                 .isEqualTo(1);
 
-        final Collection<User> commonFriends = userStorage.getCommonFriendsByUser(2, 3);
+        final List<User> commonFriends = userStorage.getCommonFriendsByUser(2, 3);
 
         assertThat(commonFriends)
                 .size()
@@ -277,6 +281,134 @@ class UserDatabaseTest {
                 .isTrue();
     }
 
+    @Test
+    void testSetRateByFilmAndGetRecommendationsFilmsByUserId() {
 
+        userStorage.createUser(
+                User
+                        .builder()
+                        .name("John")
+                        .email("john@beatles.uk")
+                        .login("john")
+                        .birthday(LocalDate.of(1940, 10, 9))
+                        .build());
+
+        userStorage.createUser(
+                User
+                        .builder()
+                        .name("Paul")
+                        .email("paul@beatles.uk")
+                        .login("paul")
+                        .birthday(LocalDate.of(1940, 10, 9))
+                        .build());
+
+        userStorage.createUser(
+                User
+                        .builder()
+                        .name("Simon")
+                        .email("simon@beatles.uk")
+                        .login("simon")
+                        .birthday(LocalDate.of(1940, 10, 9))
+                        .build());
+
+        filmStorage.createFilm(
+                Film
+                        .builder()
+                        .name("The Shawshank Redemption")
+                        .description("Nominated for 7 Oscars")
+                        .releaseDate(LocalDate.of(1994, 9, 22))
+                        .duration(144)
+                        .mpa(Mpa.builder().id(1L).build())
+                        .build());
+
+        filmStorage.createFilm(
+                Film
+                        .builder()
+                        .name("The Godfather")
+                        .description("Won 3 Oscars")
+                        .releaseDate(LocalDate.of(1972, 3, 17))
+                        .duration(144)
+                        .mpa(Mpa.builder().id(1L).build())
+                        .build());
+
+        filmStorage.createFilm(
+                Film
+                        .builder()
+                        .name("nisi eiusmod")
+                        .description("adipisicing")
+                        .releaseDate(LocalDate.of(1967, 3, 25))
+                        .duration(100)
+                        .mpa(Mpa.builder().id(1L).build())
+                        .build());
+
+        filmStorage.createFilm(
+                Film
+                        .builder()
+                        .name("Film")
+                        .description("New film decription")
+                        .releaseDate(LocalDate.of(1986, 4, 15))
+                        .duration(190)
+                        .mpa(Mpa.builder().id(1L).build())
+                        .build());
+
+        filmStorage.createFilm(
+                Film
+                        .builder()
+                        .name("Film Updated")
+                        .description("New film update decription")
+                        .releaseDate(LocalDate.of(1989, 4, 17))
+                        .duration(190)
+                        .mpa(Mpa.builder().id(1L).build())
+                        .build());
+
+
+        filmStorage.addUserMarkOnFilm(1L, 1L, 6);
+        filmStorage.addUserMarkOnFilm(1L, 2L, 9);
+        filmStorage.addUserMarkOnFilm(1L, 3L, 7);
+
+        final Film film = filmStorage.getFilmById(1L);
+
+        assertThat(
+                film)
+                .isNotNull()
+                .hasFieldOrPropertyWithValue(
+                        "rate", 7.3333335f)
+                .hasFieldOrPropertyWithValue(
+                        "name", "The Shawshank Redemption");
+
+
+        filmStorage.addUserMarkOnFilm(2L, 1L, 10);
+        filmStorage.addUserMarkOnFilm(2L, 2L, 1);
+        filmStorage.addUserMarkOnFilm(2L, 3L, 3);
+
+        filmStorage.addUserMarkOnFilm(3L, 1L, 10);
+        filmStorage.addUserMarkOnFilm(3L, 2L, 4);
+
+        filmStorage.addUserMarkOnFilm(4L, 2L, 8);
+
+        filmStorage.addUserMarkOnFilm(5L, 2L, 9);
+
+        final List<Film> recommendationsFilmsByUserId = userStorage.getRecommendationsFilmsByUserId(3L);
+
+        assertThat(
+                recommendationsFilmsByUserId)
+                .size()
+                .isEqualTo(2);
+
+        assertThat(
+                recommendationsFilmsByUserId
+                        .get(0)
+                        .getId())
+                .isEqualTo(5L);
+
+        filmStorage.removeUserMarkOnFilm(5L, 2L, 9);
+
+        assertThat(
+                userStorage
+                        .getRecommendationsFilmsByUserId(3L)
+                        .get(0)
+                        .getId())
+                .isEqualTo(4L);
+    }
 
 }

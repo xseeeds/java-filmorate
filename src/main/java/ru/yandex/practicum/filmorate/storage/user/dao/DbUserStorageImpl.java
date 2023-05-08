@@ -2,16 +2,20 @@ package ru.yandex.practicum.filmorate.storage.user.dao;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Status;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -21,6 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbUserStorageImpl implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final FilmStorage filmStorage;
 
     @Override
     public User createUser(User user) {
@@ -92,24 +97,14 @@ public class DbUserStorageImpl implements UserStorage {
 
         if (!userBuilder.getFriendsIdsStatus().isEmpty()) {
 
-            jdbcTemplate.update(
-                    "DELETE FROM friendship " +
-                            "WHERE user_id = ?",
-                    userBuilder.getId());
-
-            userBuilder.getFriendsIdsStatus().forEach(
-                    (friend_id, status) -> jdbcTemplate.update(
-                            "INSERT INTO friendship " +
-                                    "(user_id, friend_id, status) " +
-                                    "VALUES (?, ?, ?)",
-                            userBuilder.getId(), friend_id, status.toString()));
+            updateAllFriendsByUserId(userBuilder);
         }
 
         return userBuilder;
     }
 
     @Override
-    public User getUserById(long userId) {
+    public User getUserById(long userId) throws NotFoundException {
 
         checkUserById(userId);
 
@@ -124,7 +119,7 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllUser() {
+    public List<User> getAllUser() {
 
         final String sql =
                 "SELECT * " +
@@ -280,13 +275,13 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getAllFriendsByUserId(long userId) {
+    public List<User> getAllFriendsByUserId(long userId) {
 
         final String sql =
                 "SELECT users.id, users.email, users.login, users.name, users.birthday " +
                         "FROM users " +
                         "JOIN friendship ON users.id = friendship.friend_id " +
-                        "WHERE friendship.user_id = ? " +
+                        "AND friendship.user_id = ? " +
                         "AND (status LIKE 'FRIENDSHIP'" +
                         "OR status LIKE 'SUBSCRIPTION')";
 
@@ -296,14 +291,14 @@ public class DbUserStorageImpl implements UserStorage {
     }
 
     @Override
-    public Collection<User> getCommonFriendsByUser(long userId, long otherId) {
+    public List<User> getCommonFriendsByUser(long userId, long otherId) {
 
         final String sql =
                 "SELECT users.id, users.email, users.login, users.name, users.birthday " +
                         "FROM users " +
                         "JOIN friendship AS fs1 ON fs1.friend_id = users.id " +
                         "JOIN friendship AS fs2 ON fs1.friend_id = fs2.friend_id " +
-                        "WHERE fs1.user_id = ? AND fs2.user_id = ? " +
+                        "AND fs1.user_id = ? AND fs2.user_id = ? " +
                         "AND (fs2.status LIKE 'FRIENDSHIP' " +
                         "OR fs2.status LIKE 'SUBSCRIPTION')";
 
@@ -340,7 +335,7 @@ public class DbUserStorageImpl implements UserStorage {
                 newUserLogin);
 
         if (rows.next()) {
-            throw new ConflictException("Такой пользователь с login: " + newUserLogin
+            throw new ConflictException("Такой пользователь с login => " + newUserLogin
                     + " уже существует, по id => " + rows.getLong("id") + " для обновления используй PUT запрос");
         }
     }
@@ -357,7 +352,7 @@ public class DbUserStorageImpl implements UserStorage {
                 newUserEmail);
 
         if (rows.next()) {
-            throw new ConflictException("Такой пользователь с email:" + newUserEmail
+            throw new ConflictException("Такой пользователь с email => " + newUserEmail
                     + " уже существует, по id => " + rows.getLong("id") + " для обновления используй PUT запрос");
         }
     }
@@ -377,7 +372,7 @@ public class DbUserStorageImpl implements UserStorage {
             final long existentId = rows.getLong("id");
 
             if (existentId != updateUserId) {
-                throw new ConflictException("Такой пользователь с login: "
+                throw new ConflictException("Такой пользователь с login => "
                         + updateUserLogin + " уже существует, по id => " + existentId);
             }
         }
@@ -398,10 +393,41 @@ public class DbUserStorageImpl implements UserStorage {
             final long existentId = rows.getLong("id");
 
             if (existentId != updateUserId) {
-                throw new ConflictException("Такой пользователь с email: " + updateUserEmail
+                throw new ConflictException("Такой пользователь с email => " + updateUserEmail
                         + " уже существует, по id => " + existentId);
             }
         }
+    }
+
+    @Override
+    public List<Film> getRecommendationsFilmsByUserId(long userId) {
+
+        final String sqlGetFilmsByUsersWithSimilarLikesMark =
+                "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rate " +
+                        "FROM films f " +
+                        "JOIN user_film_like ufl ON ufl.film_id = f.id " +
+                        "AND ufl.user_id IN " +
+                                            "( " +
+                                            "SELECT ufl2.user_id " +
+                                            "FROM user_film_like ufl1 " +
+                                            "JOIN user_film_like ufl2 ON ufl1.film_id = ufl2.film_id " +
+                                            "AND ufl1.user_id = ? " +
+                                            "AND ufl2.user_id <> ? " +
+                                            "GROUP BY ufl1.user_id, ufl2.user_id " +
+                                            "HAVING AVG(ABS(ufl1.mark - ufl2.mark)) < 3 " + //<значение_близости_оценки_пользователей>
+                                            ") " +
+                        "AND ufl.user_id <> ? " +
+                        "AND ufl.mark > 5 " +
+                        "AND f.id NOT IN " +
+                                        "( " +
+                                        "SELECT ufl3.film_id " +
+                                        "FROM user_film_like ufl3 " +
+                                        "WHERE ufl3.user_id = ? " +
+                                        ") " +
+                        "ORDER BY f.rate DESC";
+
+        return jdbcTemplate.query(sqlGetFilmsByUsersWithSimilarLikesMark,
+                filmStorage::makeFilm, userId, userId, userId, userId);
     }
 
     private User makeUser(ResultSet resultSet, int rowNum) throws SQLException {
@@ -437,12 +463,52 @@ public class DbUserStorageImpl implements UserStorage {
                                                 Map.Entry::getKey,
                                                 Map.Entry::getValue,
                                                 (oldValue, newValue) -> newValue,
-                                                HashMap::new)));
+                                                HashMap::new
+                                        )
+                                )
+                );
 
         return userBuilder;
     }
 
     private Map<Long, Status> makeFriend(ResultSet rs, int rowNum) throws SQLException {
         return Map.of(rs.getLong("friend_id"), Status.valueOf(rs.getString("status")));
+    }
+
+    private void updateAllFriendsByUserId(User user) {
+
+        jdbcTemplate.update(
+                "DELETE FROM friendship " +
+                        "WHERE user_id = ?",
+                user.getId());
+
+        //TODO преобразование id из long в int для batchUpdate
+
+        List<Integer> friendsIds = new ArrayList<>();
+        List<Status> allStatuses = new ArrayList<>();
+
+        user.getFriendsIdsStatus().forEach((fiendId, status) -> {
+            friendsIds.add(fiendId.intValue());
+            allStatuses.add(status);
+        });
+
+        final String sqlQuery =
+                "INSERT INTO friendship " +
+                        "(user_id, friend_id, status) " +
+                        "VALUES (?, ?, ?)";
+
+        jdbcTemplate.batchUpdate(sqlQuery, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, user.getId());
+                ps.setLong(2, friendsIds.get(i));
+                ps.setString(3, allStatuses.get(i).toString());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return user.getFriendsIdsStatus().size();
+            }
+        });
     }
 }

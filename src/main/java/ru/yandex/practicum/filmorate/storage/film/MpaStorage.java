@@ -11,7 +11,7 @@ public interface MpaStorage {
 
     List<Mpa> getMpaList();
 
-    Mpa getMpaById(int id) throws NotFoundException;
+    Mpa getMpaById(long id) throws NotFoundException;
 
     Mpa makeMpa(ResultSet resultSet, int rowNum) throws SQLException;
 

@@ -23,8 +23,8 @@ public class MpaController {
         return mpaService.getMpaList();
     }
 
-    @GetMapping("/{id}")
-    public Mpa getMpaById(@PathVariable int id) {
-        return mpaService.getMpaById(id);
+    @GetMapping("/{mpaId}")
+    public Mpa getMpaById(@PathVariable long mpaId) {
+        return mpaService.getMpaById(mpaId);
     }
 }

@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -10,14 +9,14 @@ import ru.yandex.practicum.filmorate.annotation.FirstFilmBirthdayValidator;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+
 
 @Data
 @Builder
 public class Film {
 
-    @Min(value = 0, message = "должно быть больше 0")
+    @Positive
     @EqualsAndHashCode.Exclude
     private Long id;
 
@@ -30,25 +29,29 @@ public class Film {
     private String description;
 
     @Positive
+    @EqualsAndHashCode.Exclude
     private int duration;
 
     @FirstFilmBirthdayValidator
     private LocalDate releaseDate;
 
-    @Max(value = 10)
+    @Min(0)
+    @Max(10)
     @PositiveOrZero
     @EqualsAndHashCode.Exclude
     private float rate;
 
+    @EqualsAndHashCode.Exclude
     private Mpa mpa;
 
-    private final Set<Genre> genres = new HashSet<>();
+    @EqualsAndHashCode.Exclude
+    private final List<Genre> genres = new ArrayList<>();
 
-    //TODO TreeMap<Integer, Integer> likes; userId/rate
-    private final Set<Long> userFilmLike = new HashSet<>();
+    @EqualsAndHashCode.Exclude
+    private final List<Director> directors = new ArrayList<>();
 
-    @JsonIgnore
-    public int getLikesSize() {
-        return userFilmLike.size();
-    }
+    //TODO HashMap<Long, Integer> likes; userId/rate
+    @EqualsAndHashCode.Exclude
+    private final Map<Long, Integer> userFilmLike = new HashMap<>();
+
 }

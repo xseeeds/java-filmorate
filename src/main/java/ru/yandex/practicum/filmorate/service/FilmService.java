@@ -8,13 +8,16 @@ import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Positive;
-import java.util.Collection;
+import java.util.List;
 
 
 @Service
@@ -24,12 +27,13 @@ import java.util.Collection;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
-
+    private final DirectorStorage directorStorage;
+    private final GenreStorage genreStorage;
 
     @Validated
     public Film createFilm(@Valid Film film) throws ConflictException {
 
-        filmStorage.checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDate(film);
 
         final Film createdFilm = filmStorage.createFilm(film);
 
@@ -43,7 +47,7 @@ public class FilmService {
 
         filmStorage.checkFilmById(film.getId());
 
-        filmStorage.checkFilmByNameReleaseDateDuration(film);
+        filmStorage.checkFilmByNameReleaseDate(film);
 
         final Film updatedFilm = filmStorage.updateFilm(film);
 
@@ -52,9 +56,9 @@ public class FilmService {
         return updatedFilm;
     }
 
-    public Collection<Film> getAllFilm() {
+    public List<Film> getAllFilm() {
 
-        final Collection<Film> allFilm = filmStorage.getAllFilm();
+        final List<Film> allFilm = filmStorage.getAllFilm();
 
         log.info("Фильм получены (кол-во) => {}", allFilm.size());
 
@@ -88,7 +92,7 @@ public class FilmService {
         return "Фильм c id => " + filmId + "удален";
     }
 
-    public void addUserLikeByFilmId(@Positive long filmId, @Positive long userId) throws ConflictException, NotFoundException {
+    public void addUserLikeByFilmId(@Positive long filmId, @Positive long userId, @Min(0) @Max(10) int mark) throws ConflictException, NotFoundException {
 
         filmStorage.checkFilmById(filmId);
 
@@ -96,12 +100,12 @@ public class FilmService {
 
         filmStorage.checkFilmLikeByUserId(filmId, userId, true);
 
-        filmStorage.addUserLikeOnFilm(filmId, userId);
+        filmStorage.addUserMarkOnFilm(filmId, userId, mark);
 
-        log.info("Пользователем c id => {} добавлен лайк фильму c id => {}", userId, filmId);
+        log.info("Пользователем c id => {} добавлен лайк фильму c id => {} mark => {}", userId, filmId, mark);
     }
 
-    public void removeUserLikeByFilmId(@Positive long filmId, @Min(-2) long userId) throws ConflictException, NotFoundException {
+    public void removeUserLikeByFilmId(@Positive long filmId, @Min(-2) long userId, @Min(0) @Max(10) int mark) throws ConflictException, NotFoundException {
 
         filmStorage.checkFilmById(filmId);
 
@@ -109,18 +113,56 @@ public class FilmService {
 
         filmStorage.checkFilmLikeByUserId(filmId, userId, false);
 
-        filmStorage.removeUserLikeOnFilm(filmId, userId);
+        filmStorage.removeUserMarkOnFilm(filmId, userId, mark);
 
-        log.info("Пользователем c id => {} удален лайк у фильма c id => {}", userId, filmId);
+        log.info("Пользователем c id => {} удален лайк у фильма c id => {} mark => {}", userId, filmId, mark);
     }
 
-    public Collection<Film> getFilmByPopular(@Positive int count) {
+    public List<Film> getFilmByPopular(@Positive int count, String genre, @Positive Integer year) throws NotFoundException {
 
-        final Collection<Film> filmByPopular = filmStorage.getFilmByPopular(count);
+        if (genre != null) {
+            genreStorage.checkGenreByName(genre, false);
+        }
 
-        log.info("Запрошенное количество фильмов по популярности : {}", filmByPopular.size());
+        final List<Film> filmByPopular = filmStorage.getFilmByPopular(count, genre, year);
+
+        log.info("Запрошенное количество фильмов по популярности => {}", filmByPopular.size());
 
         return filmByPopular;
+    }
+
+    public List<Film> getFilmsByDirector(@Positive long directorId, String sortBy) throws NotFoundException {
+
+        directorStorage.checkDirectorById(directorId);
+
+        final List<Film> filmsByDirector = filmStorage.getFilmsByDirector(directorId, sortBy);
+
+        log.info("Запроc фильмов по режиссёру с id => {} количество фильмов => {} отсортированных по => {}", directorId, filmsByDirector.size(), sortBy);
+
+        return filmsByDirector;
+
+    }
+
+    public List<Film> getFilmsBySearch(String query, String by) {
+
+        final List<Film> filmsBySearch = filmStorage.getFilmsBySearch(query, by);
+
+        log.info("Запроc фильмов по ключевому слову => {} и параметру => {} количество => {}", query, by, filmsBySearch.size());
+
+        return filmsBySearch;
+    }
+
+    public List<Film> getCommonFilms(@Positive long userId, @Positive long otherId) throws NotFoundException {
+
+        userStorage.checkUserById(userId);
+
+        userStorage.checkUserById(otherId);
+
+        final List<Film> commonFilms = filmStorage.getCommonFilms(userId, otherId);
+
+        log.info("Запроc общих фильмов двух пользователей userId => {} и otherId => {}, количество => {}", userId, otherId, commonFilms.size());
+
+        return commonFilms;
     }
 
 }

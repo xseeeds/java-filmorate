@@ -21,13 +21,13 @@ public class GenreController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<Genre> getGenres() {
-        return genreService.getGenres();
+    public List<Genre> getAllGenre() {
+        return genreService.getAllGenre();
     }
 
     @GetMapping("/{genreId}")
     @ResponseStatus(HttpStatus.OK)
-    public Genre getGenreById(@PathVariable int genreId) {
+    public Genre getGenreById(@PathVariable long genreId) {
         return genreService.getGenreById(genreId);
     }
 
@@ -51,13 +51,13 @@ public class GenreController {
 
     @PutMapping("/{genreId}/films/{filmId}")
     @ResponseStatus(HttpStatus.OK)
-    public void addGenreOnFilm(@PathVariable int genreId, @PathVariable long filmId) {
+    public void addGenreOnFilm(@PathVariable long genreId, @PathVariable long filmId) {
         genreService.addGenreOnFilm(genreId, filmId);
     }
 
     @DeleteMapping("/{genreId}/films/{filmId}")
     @ResponseStatus(HttpStatus.OK)
-    public void removeGenreOnFilm(@PathVariable int genreId, @PathVariable long filmId) {
+    public void removeGenreOnFilm(@PathVariable long genreId, @PathVariable long filmId) {
         genreService.removeGenreOnFilm(genreId, filmId);
     }
 
@@ -67,7 +67,7 @@ public class GenreController {
     }
 
     @DeleteMapping("/{genreId}")
-    public ResponseEntity<String> removeGenreById(@PathVariable int genreId) {
+    public ResponseEntity<String> removeGenreById(@PathVariable long genreId) {
         return ResponseEntity.ok(genreService.removeGenreById(genreId));
     }
 }

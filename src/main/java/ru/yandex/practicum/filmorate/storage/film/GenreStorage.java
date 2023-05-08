@@ -14,21 +14,21 @@ public interface GenreStorage {
 
     Genre updateGenre(Genre genre);
 
-    void addGenreOnFilm(int genreId, long filmId);
+    void addGenreOnFilm(long genreId, long filmId);
 
-    void removeGenreOnFilm(int genreId, long filmId);
+    void removeGenreOnFilm(long genreId, long filmId);
 
-    void checkGenreOnFilm(int genreId, long filmId, boolean addOrRemove) throws NotFoundException, ConflictException;
+    void checkGenreOnFilm(long genreId, long filmId, boolean addOrRemove) throws NotFoundException, ConflictException;
 
-    List<Genre> getGenreList();
+    List<Genre> getAllGenre();
 
-    Genre getGenreById(int id) throws NotFoundException;
+    Genre getGenreById(long id) throws NotFoundException;
 
-    void checkGenreById(int id) throws NotFoundException;
+    void checkGenreById(long id) throws NotFoundException;
 
-    void checkGenre(Genre genre) throws NotFoundException;
+    void checkGenreByName(String genre, boolean ifExist) throws NotFoundException, ConflictException;
 
-    void removeGenreById(int id);
+    void removeGenreById(long id) throws NotFoundException;
 
     void removeAllGenre();
 

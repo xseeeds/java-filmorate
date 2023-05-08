@@ -8,17 +8,15 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.exception.ConflictException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.storage.film.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.film.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -31,15 +29,17 @@ public class FilmGenreDatabaseTest {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
     private final GenreStorage genreStorage;
+    private final MpaStorage mpaStorage;
+    private final DirectorStorage directorStorage;
 
 
     @AfterEach
-    public void ternDown() {
+    void ternDown() {
         filmStorage.removeAllFilm();
     }
 
     @Test
-    public void testFilmCreateGetUpdateCheck() {
+    void testFilmCreateGetUpdateCheck() {
 
         assertThatThrownBy(
                 () -> filmStorage.checkFilmById(1L))
@@ -56,7 +56,7 @@ public class FilmGenreDatabaseTest {
                         "Такой фильм с id => 1 не существует");
 
 
-        final Collection<Film> films = filmStorage.getAllFilm();
+        final List<Film> films = filmStorage.getAllFilm();
 
         assertThat(films)
                 .size()
@@ -69,7 +69,7 @@ public class FilmGenreDatabaseTest {
                         .description("Nominated for 7 Oscars")
                         .releaseDate(LocalDate.of(1994, 9, 22))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).build())
+                        .mpa(Mpa.builder().id(1L).build())
                         .build());
 
         final Film film1 = filmStorage.getFilmById(1L);
@@ -92,7 +92,7 @@ public class FilmGenreDatabaseTest {
                 .hasFieldOrPropertyWithValue(
                         "rate", (float) 5);
 
-        final Collection<Film> allFilms = filmStorage.getAllFilm();
+        final List<Film> allFilms = filmStorage.getAllFilm();
 
         assertThat(
                 allFilms)
@@ -102,7 +102,7 @@ public class FilmGenreDatabaseTest {
     }
 
     @Test
-    public void testCheckFilmByNameReleaseDateDuration() {
+    void testCheckFilmByNameReleaseDateDuration() {
 
         filmStorage.createFilm(
                 Film
@@ -111,27 +111,27 @@ public class FilmGenreDatabaseTest {
                         .description("Nominated for 7 Oscars")
                         .releaseDate(LocalDate.of(1994, 9, 22))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).build())
+                        .mpa(Mpa.builder().id(1L).build())
                         .build());
 
         assertThatThrownBy(
-                () -> filmStorage.checkFilmByNameReleaseDateDuration(
+                () -> filmStorage.checkFilmByNameReleaseDate(
                         Film
                                 .builder()
                                 .name("The Shawshank Redemption")
                                 .description("Nominated for 7 Oscars")
                                 .releaseDate(LocalDate.of(1994, 9, 22))
                                 .duration(144)
-                                .mpa(Mpa.builder().id(1).build())
+                                .mpa(Mpa.builder().id(1L).build())
                                 .build()))
                 .isInstanceOf(
                         ConflictException.class)
                 .hasMessageContaining(
-                        "Такой фильм с именем => The Shawshank Redemption уже существует");
+                        "Такой фильм с именем => The Shawshank Redemption и датой релиза => 1994-09-22 уже существует по id => 1");
     }
 
     @Test
-    public void testAddAndRemoveUserLikeOnFilm() {
+    void testAddAndRemoveUserLikeOnFilm() {
 
         filmStorage.createFilm(
                 Film
@@ -140,7 +140,7 @@ public class FilmGenreDatabaseTest {
                         .description("Nominated for 7 Oscars")
                         .releaseDate(LocalDate.of(1994, 9, 22))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).build())
+                        .mpa(Mpa.builder().id(1L).build())
                         .build());
 
         filmStorage.createFilm(
@@ -150,7 +150,7 @@ public class FilmGenreDatabaseTest {
                         .description("Won 3 Oscars")
                         .releaseDate(LocalDate.of(1972, 3, 17))
                         .duration(144)
-                        .mpa(Mpa.builder().id(1).build())
+                        .mpa(Mpa.builder().id(1L).build())
                         .build());
 
         userStorage.createUser(
@@ -162,31 +162,31 @@ public class FilmGenreDatabaseTest {
                         .birthday(LocalDate.of(1940, 10, 9))
                         .build());
 
-        filmStorage.addUserLikeOnFilm(2L, 1L);
+        filmStorage.addUserMarkOnFilm(2L, 1L, 3);
 
         assertThat(
-                new ArrayList<>(filmStorage.getFilmByPopular(10)).get(0))
+                new ArrayList<>(filmStorage.getFilmByPopular(10, null, null)).get(0))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Godfather");
 
         assertThat(
-                new ArrayList<>(filmStorage.getFilmByPopular(10)).get(1))
+                new ArrayList<>(filmStorage.getFilmByPopular(10, null, null)).get(1))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Shawshank Redemption");
 
 
-        filmStorage.removeUserLikeOnFilm(2L, 1L);
-        filmStorage.addUserLikeOnFilm(1L, 1L);
+        filmStorage.removeUserMarkOnFilm(2L, 1L, 3);
+        filmStorage.addUserMarkOnFilm(1L, 1L,  7);
 
         assertThat(
                 new ArrayList<>(
-                        filmStorage.getFilmByPopular(10)).get(0))
+                        filmStorage.getFilmByPopular(10, null, null)).get(0))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Shawshank Redemption");
 
         assertThat(
                 new ArrayList<>(
-                        filmStorage.getFilmByPopular(10)).get(1))
+                        filmStorage.getFilmByPopular(10, null, null)).get(1))
                 .hasFieldOrPropertyWithValue(
                         "name", "The Godfather");
 
@@ -209,10 +209,16 @@ public class FilmGenreDatabaseTest {
         userStorage.removeAllUser();
     }
 
+    //TODO добавить тест checkOnFilm
     @Test
-    public void testGenreCreateCheck() {
+    void testGenreCreateCheck() {
 
-        final List<Genre> genres = genreStorage.getGenreList();
+        assertThat(
+                mpaStorage.getMpaById(1L))
+                .hasFieldOrPropertyWithValue(
+                        "name", "G");
+
+        final List<Genre> genres = genreStorage.getAllGenre();
 
         assertThat(genres)
                 .size()
@@ -224,39 +230,88 @@ public class FilmGenreDatabaseTest {
                 .build());
 
         assertThat(
-                genreStorage.getGenreList())
+                genreStorage.getAllGenre())
                 .size()
                 .isEqualTo(7);
 
         assertThat(
-                genreStorage.getGenreById(7))
+                genreStorage.getGenreById(7L))
                 .hasFieldOrPropertyWithValue(
                         "name", "New genre");
 
 
         genreStorage.updateGenre(Genre
                 .builder()
-                .id(7)
+                .id(7L)
                 .name("Update genre")
                 .build());
 
         assertThatThrownBy(
-                () -> genreStorage.checkGenre(Genre
-                        .builder()
-                        .name("Update genre")
-                        .build()))
+                () -> genreStorage.checkGenreByName("Update genre", true))
                 .isInstanceOf(
-                        NotFoundException.class)
+                        ConflictException.class)
                 .hasMessageContaining(
                         "Жанр => Update genre уже существует по id => 7");
 
 
+        assertThatThrownBy(
+                        () -> genreStorage.checkGenreByName("Some genre", false))
+                .isInstanceOf(
+                        NotFoundException.class)
+                .hasMessageContaining("Жанр => Some genre не существует");
+
+    }
+
+    //TODO добавить тест checkOnFilm
+    @Test
+    void testDirectorCreateCheck() {
+
+        final List<Director> directors = directorStorage.getAllDirector();
+
+        assertThat(directors)
+                .size()
+                .isEqualTo(0);
+
+        directorStorage.createDirector(Director
+                .builder()
+                .name("New director")
+                .build());
+
+        assertThat(
+                directorStorage.getAllDirector())
+                .size()
+                .isEqualTo(1);
+
+        assertThat(
+                directorStorage.getDirectorById(1L))
+                .hasFieldOrPropertyWithValue(
+                        "name", "New director");
+
+
+        directorStorage.updateDirector(Director
+                .builder()
+                .id(1L)
+                .name("Update director")
+                .build());
+
+        assertThatThrownBy(
+                () -> directorStorage.checkDirectorByName(
+                        Director
+                                .builder()
+                                .name("Update director")
+                                .build()))
+                .isInstanceOf(
+                        ConflictException.class)
+                .hasMessageContaining(
+                        "Режиссёр => Update director уже существует по id => 1");
+
+
         assertThatNoException()
                 .isThrownBy(
-                        () -> genreStorage.checkGenre(
-                                Genre
+                        () -> directorStorage.checkDirectorByName(
+                                Director
                                         .builder()
-                                        .name("Some genre")
+                                        .name("Some director")
                                         .build()));
 
     }
